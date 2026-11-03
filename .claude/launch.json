@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "malintx-api",
+      "runtimeExecutable": "C:/Projects/malintx/.venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "malintx.api.app"],
+      "port": 8750
+    },
+    {
+      "name": "malintx-dashboard",
+      "runtimeExecutable": "C:/Projects/malintx/.venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "streamlit", "run", "malintx/dashboard/app.py", "--server.port", "8501", "--server.headless", "true"],
+      "port": 8501
+    }
+  ]
+}

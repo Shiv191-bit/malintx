@@ -1,0 +1,31 @@
+# Not exercised in the authoring environment. Set MALINTX_API_TOKEN before exposing beyond localhost.
+services:
+  api:
+    build: .
+    command: python -m malintx.api.app
+    env_file: [.env]
+    environment:
+      MALINTX_DATA_DIR: /data
+      MALINTX_API_HOST: 0.0.0.0
+    ports: ["127.0.0.1:8750:8750"]
+    volumes: ["malintx-data:/data"]
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 6g
+    pids_limit: 256
+  dashboard:
+    build: .
+    command: python -m streamlit run malintx/dashboard/app.py --server.address 0.0.0.0 --server.port 8501
+    environment:
+      MALINTX_API_URL: http://api:8750
+      MALINTX_API_TOKEN: ${MALINTX_API_TOKEN:-}
+    ports: ["127.0.0.1:8501:8501"]
+    depends_on: [api]
+    read_only: true
+    tmpfs: ["/tmp", "/home/malintx/.streamlit"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+volumes:
+  malintx-data:
