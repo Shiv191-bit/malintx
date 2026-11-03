@@ -90,8 +90,8 @@ Full instructions: [docs/SETUP.md](docs/SETUP.md).
 
 | Status | Scope |
 |---|---|
-| ✅ **Verified** | Full automated suite (unit, integration, API end-to-end, dashboard, report, evaluation); lint clean (`ruff`); browser check against live API data; JADX 1.5.6 and Apktool 3.0.3 on synthetic APKs |
-| ⚠️ **Not yet verified** | Real-world APKs; live VirusTotal, Shodan, MalwareBazaar and Koodous; live LLM providers; Docker build; any real malware or benign corpus |
+|  **Verified** | Full automated suite (unit, integration, API end-to-end, dashboard, report, evaluation); lint clean (`ruff`); browser check against live API data; JADX 1.5.6 and Apktool 3.0.3 on synthetic APKs |
+|  **Not yet verified** | Real-world APKs; live VirusTotal, Shodan, MalwareBazaar and Koodous; live LLM providers; Docker build; any real malware or benign corpus |
 
 Details: [Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md).
 
