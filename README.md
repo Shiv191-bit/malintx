@@ -104,6 +104,3 @@ Details: [Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md).
 | [Setup](docs/SETUP.md) | [Technical decisions](docs/TECHNICAL_DECISIONS.md) | [Datasets & evaluation](docs/DATASETS_AND_EVALUATION.md) |
 | | | [Agent handoff](docs/AGENT_HANDOFF.md) |
 
-## Repository notes
-
-`legacy/` contains the archived pre-0.2 scaffold. It is non-functional and kept for reference only.
