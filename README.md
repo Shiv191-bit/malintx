@@ -1,22 +1,120 @@
+<div align="center">
+
 # MALINT-X
 
-Android malware analysis and threat-intelligence platform. Upload an APK; get validated metadata, manifest intelligence, evidence-backed behavioural findings, extracted indicators, optional passive threat-intel and AI interpretation, MITRE ATT&CK for Mobile mapping, a deterministic explainable risk assessment, a dashboard and a forensic PDF.
+### Evidence-first Android malware analysis and threat intelligence
 
-**Evidence first. Intelligence second. AI third.** The AI can never invent evidence or set the verdict; the core pipeline needs no API key, network or Java.
+**Upload an APK. Get a verdict you can defend.**
 
-* Static analysis only. Samples are never executed.
-* Honest outcomes: `informational … critical`, plus `inconclusive`, `insufficient_evidence`, `analysis_failed`. A low score is not a safety certificate.
-* Capability ≠ intent ≠ vulnerability: SMS APIs in a banking app are not malice; misconfigurations are reported separately and never add to the score.
-* **Hash-free behavioural lineage** and **near-miss explanations** (what single signal separates an app from a trojan pattern): [docs/LINEAGE.md](docs/LINEAGE.md).
-* **Measured on real data, honestly:** 0/60 + 0/60 randomly sampled real F-Droid apps rated high/critical (95% upper bound 6% each), median ~6 s. **On never-seen real malware recall is weak: 10.7% at high/critical on 28 mixed recent APKs, 25.6% (CI 17.3–36.3%) on 78 banking-trojan family samples, 65% at medium+.** Today this is a low-false-positive triage/explanation tool, not a malware detector. See [docs/MALWARE_RESULTS.md](docs/MALWARE_RESULTS.md) and [docs/REAL_DATA_VERIFICATION.md](docs/REAL_DATA_VERIFICATION.md).
+![Analysis](https://img.shields.io/badge/analysis-static%20only-informational)
+![Core pipeline](https://img.shields.io/badge/core%20pipeline-offline%20%7C%20no%20API%20key%20%7C%20no%20Java-success)
+![Scoring](https://img.shields.io/badge/risk%20scoring-deterministic%20%26%20explainable-blue)
+![Detection](https://img.shields.io/badge/malware%20recall-weak%2C%20measured-orange)
+![False positives](https://img.shields.io/badge/false%20positives-0%2F120%20real%20apps-brightgreen)
+
+</div>
+
+---
+
+## Why MALINT-X
+
+Most mobile-malware tooling hands you a score and asks you to trust it. MALINT-X is built the other way around: every finding points back to the evidence that produced it, every score can be explained line by line, and the system says so plainly when it does not know.
+
+> **Evidence first. Intelligence second. AI third.**
+> AI can interpret findings. It can never invent evidence and it never sets the verdict.
+
+## What you get from a single APK
+
+| Output | What it contains |
+|---|---|
+| **Validated metadata** | Integrity-checked package and file information |
+| **Manifest intelligence** | Permissions, components, exported surfaces, configuration |
+| **Behavioural findings** | Static findings, each linked to supporting evidence |
+| **Indicators** | Extracted IOCs for downstream use |
+| **Threat intelligence** *(optional, passive)* | Enrichment from external intel sources |
+| **AI interpretation** *(optional)* | Plain-language explanation layered on top of the evidence |
+| **ATT&CK mapping** | MITRE ATT&CK for Mobile technique mapping |
+| **Risk assessment** | Deterministic, explainable, reproducible |
+| **Dashboard + forensic PDF** | Interactive review and a shareable report |
+
+## Design principles
+
+- **Static analysis only.** Samples are never executed.
+- **Self-contained core.** The core pipeline needs no API key, no network and no Java. Integrations are strictly optional.
+- **Deterministic verdicts.** The same input yields the same score, with a visible reasoning trail.
+- **Capability ≠ intent ≠ vulnerability.** SMS APIs in a banking app are not malice. Misconfigurations are reported separately and never inflate the risk score.
+- **Honest outcomes.** The system can answer "I can't tell you":
+
+| Outcome | Meaning |
+|---|---|
+| `informational` → `critical` | Graded risk, backed by evidence |
+| `inconclusive` | Evidence exists but does not support a confident call |
+| `insufficient_evidence` | Not enough signal to assess |
+| `analysis_failed` | The pipeline could not complete |
+
+A low score is **not** a safety certificate.
+
+## Pipeline
+
+```mermaid
+flowchart LR
+    A[APK upload] --> B[Validation<br/>& metadata]
+    B --> C[Manifest<br/>intelligence]
+    C --> D[Behavioural<br/>findings]
+    D --> E[Indicator<br/>extraction]
+    E --> F[Passive threat intel<br/><i>optional</i>]
+    F --> G[AI interpretation<br/><i>optional</i>]
+    D --> H[ATT&CK for Mobile<br/>mapping]
+    H --> I[Deterministic<br/>risk assessment]
+    I --> J[Dashboard<br/>& forensic PDF]
+```
+
+The diagram shows the logical flow of outputs. See [Architecture](docs/ARCHITECTURE.md) for the authoritative design.
 
 ## Quick start
-See [docs/SETUP.md](docs/SETUP.md). In short: install `requirements.lock.txt`, run `python -m malintx.api.app` and `streamlit run malintx/dashboard/app.py`.
 
-## Verified status (this repository)
-Automated suite (183 tests) passes, ruff clean. Verified in a browser, with real JADX 1.5.6 / Apktool 3.0.3, and on 87 real F-Droid APKs. Live VirusTotal, Shodan and MalwareBazaar calls verified; Docker image builds and the isolated malware lab ran. **Not verified**: banking-trojan families specifically, banking apps as benign controls, Koodous, any LLM provider (no key). Details in [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md).
+```bash
+pip install -r requirements.lock.txt
+
+# API
+python -m malintx.api.app
+
+# Dashboard (second terminal)
+streamlit run malintx/dashboard/app.py
+```
+
+Full instructions: [docs/SETUP.md](docs/SETUP.md).
+
+## Transparency: what is and isn't verified
+
+**Measured on real data, with rules frozen before each held-out run.**
+
+| Measurement | Result |
+|---|---|
+| False positives: random real F-Droid apps rated high/critical | **0/60 and 0/60** (95% upper bound 6% each); median about 6 s per APK |
+| Recall on never-seen real malware, mixed recent uploads (n=28) | **10.7%** at high/critical (95% CI 3.7-27.2%); 28.6% at medium or higher |
+| Recall on banking-trojan families (n=78; 67 distinct) | **25.6%** at high/critical (CI 17.3-36.3%); about 65% at medium or higher |
+
+**Today this is a low-false-positive triage and explanation tool, not a malware detector.** Most banking trojans are not rated high; the triage of the misses and the fix plan are in [Malware results](docs/MALWARE_RESULTS.md). Real malware was handled only inside an offline Docker container (`--network none`, read-only filesystem, no capabilities) and never executed.
+
+| Status | Scope |
+|---|---|
+| **Verified** | 193 automated tests; lint clean; 87 real F-Droid APKs; live VirusTotal, Shodan and MalwareBazaar calls; JADX 1.5.6 and Apktool 3.0.3; Docker image and isolated malware lab |
+| **Not verified** | Live LLM providers (no key; mock-tested only); Koodous; native-code malware; banking apps as benign controls |
+
+Details: [Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md), [Real-data verification](docs/REAL_DATA_VERIFICATION.md).
+
+## Demo and functionality
+* [Functionality](docs/FUNCTIONALITY.md): everything the platform does, with its limits.
+* [Judge demo guide](docs/JUDGE_DEMO.md): an 8-minute script using `python scripts/make_demo_samples.py` (synthetic samples, no malware needed).
 
 ## Documentation
-[Product requirements](docs/PRODUCT_REQUIREMENTS.md) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](docs/IMPLEMENTATION_ROADMAP.md) · [Security model](docs/SECURITY_MODEL.md) · [API contracts](docs/API_CONTRACTS.md) · [Technical decisions](docs/TECHNICAL_DECISIONS.md) · [Repository audit](docs/REPOSITORY_AUDIT.md) · [Datasets & evaluation](docs/DATASETS_AND_EVALUATION.md) · [Real-data verification](docs/REAL_DATA_VERIFICATION.md) · [Lineage](docs/LINEAGE.md) · [Malware results](docs/MALWARE_RESULTS.md) · [Malware lab](docs/MALWARE_LAB.md) · [Agent handoff](docs/AGENT_HANDOFF.md)
 
-`legacy/` holds the archived pre-0.2 scaffold (non-functional; kept for reference).
+| Start here | Go deeper | Project health |
+|---|---|---|
+| [Product requirements](docs/PRODUCT_REQUIREMENTS.md) | [Security model](docs/SECURITY_MODEL.md) | [Roadmap](docs/IMPLEMENTATION_ROADMAP.md) |
+| [Architecture](docs/ARCHITECTURE.md) | [API contracts](docs/API_CONTRACTS.md) | [Repository audit](docs/REPOSITORY_AUDIT.md) |
+| [Setup](docs/SETUP.md) | [Technical decisions](docs/TECHNICAL_DECISIONS.md) | [Datasets & evaluation](docs/DATASETS_AND_EVALUATION.md) |
+| | | [Agent handoff](docs/AGENT_HANDOFF.md) |
+| [Functionality](docs/FUNCTIONALITY.md) | [Lineage](docs/LINEAGE.md) | [Malware results](docs/MALWARE_RESULTS.md) |
+| [Judge demo](docs/JUDGE_DEMO.md) | [Malware lab](docs/MALWARE_LAB.md) | [Real-data verification](docs/REAL_DATA_VERIFICATION.md) |
