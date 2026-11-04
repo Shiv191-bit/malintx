@@ -50,7 +50,7 @@ def test_vt_ip_malicious_parsed_with_context(tmp_path):
 
 
 @pytest.mark.parametrize("mal,sus,har,und,expected", [
-    (0, 0, 0, 0, IntelVerdict.UNKNOWN), (0, 0, 40, 20, IntelVerdict.BENIGN_OBSERVED), (1, 0, 60, 5, IntelVerdict.SUSPICIOUS),
+    (0, 0, 0, 0, IntelVerdict.UNKNOWN), (0, 0, 40, 20, IntelVerdict.BENIGN_OBSERVED), (1, 0, 60, 5, IntelVerdict.UNKNOWN), (2, 0, 60, 5, IntelVerdict.SUSPICIOUS),
     (0, 4, 60, 5, IntelVerdict.SUSPICIOUS), (3, 0, 60, 5, IntelVerdict.KNOWN_MALICIOUS)])
 def test_vt_verdict_thresholds(tmp_path, mal, sus, har, und, expected):
     lk = provider(VirusTotal, tmp_path, lambda r: httpx.Response(200, json=vt_body(mal, sus, har, und))).lookup_indicator(IndicatorType.DOMAIN, "x.example")

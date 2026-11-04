@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import re
 
 from pypdf import PdfReader
 
@@ -81,5 +82,5 @@ def test_hostile_strings_cannot_break_rendering(analyzed, settings):
 def test_report_is_deterministic_in_content(analyzed, settings):
     a = text(render_report(result(analyzed["benign_bank"], settings)))
     b = text(render_report(result(analyzed["benign_bank"], settings)))
-    strip = lambda s: "\n".join(line for line in s.splitlines() if "Generated" not in line and "UTC" not in line)  # noqa: E731
+    strip = lambda s: re.sub(r"\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d+)?(\+00:00)?", "<ts>", s)  # noqa: E731
     assert strip(a) == strip(b)

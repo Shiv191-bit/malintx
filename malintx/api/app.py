@@ -151,6 +151,37 @@ def create_app(settings: Settings | None = None, platform: Platform | None = Non
             return JSONResponse(status_code=202, content={"job": job.model_dump(mode="json"), "result": None})
         return JSONResponse(content=result.model_dump(mode="json"))
 
+    @router.get("/analyses/{job_id}/similar")
+    def similar(request: Request, job_id: str, limit: int = 8, min_similarity: float = 0.3) -> dict[str, Any]:
+        """Hash-free lineage: other analysed samples with a similar framework-API behavioural fingerprint."""
+        from malintx.lineage.search import rank
+
+        p = plat(request)
+        result = p.repo.get_result(job_id)
+        if result is None:
+            raise NotFoundError("no result stored for this job")
+        fp = result.static.lineage if result.static else None
+        if fp is None:
+            return {"job_id": job_id, "available": False, "reason": "no analysable code, so no fingerprint was computed", "matches": []}
+        matches = rank(fp, p.repo.all_fingerprints(exclude_job=job_id), min(max(limit, 1), 50), min(max(min_similarity, 0.0), 1.0))
+        return {"job_id": job_id, "available": True, "api_count": fp.api_count, "compared_against": len(p.repo.all_fingerprints(exclude_job=job_id)),
+                "matches": matches, "method": "MinHash(128) over framework APIs called by app code; estimates Jaccard similarity"}
+
+    @router.get("/diff")
+    def diff(request: Request, base: str, other: str) -> dict[str, Any]:
+        """Capability delta: what `other` has that `base` lacks (repackaging / version-drift analysis)."""
+        from malintx.lineage.diff import diff_results
+        from malintx.lineage.search import compare
+
+        p = plat(request)
+        a, b = p.repo.get_result(base), p.repo.get_result(other)
+        if a is None or b is None or a.static is None or b.static is None:
+            raise NotFoundError("both analyses must have stored static results")
+        out = diff_results(a.static, b.static)
+        if a.static.lineage and b.static.lineage:
+            out["similarity"] = compare(a.static.lineage, b.static.lineage)
+        return out
+
     @router.get("/analyses/{job_id}/report")
     def job_report(request: Request, job_id: str):
         rep = plat(request).repo.get_report(job_id)

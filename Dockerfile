@@ -1,8 +1,8 @@
-# MALINT-X: reproducible container (NOT built or tested in the authoring environment; see docs/IMPLEMENTATION_ROADMAP.md).
+# MALINT-X container. Tool versions match those verified on the dev host (JADX 1.5.6, Apktool 3.0.3).
 FROM python:3.14-slim AS base
 
-ARG JADX_VERSION=1.5.0
-ARG APKTOOL_VERSION=2.10.0
+ARG JADX_VERSION=1.5.6
+ARG APKTOOL_VERSION=3.0.3
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1
 
 # JRE for the optional JADX/Apktool adapters. Pin and verify tool archives for your own deployment
@@ -19,12 +19,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends default-jre-hea
 RUN useradd --create-home --uid 10001 malintx
 WORKDIR /app
 COPY requirements.lock.txt pyproject.toml README.md ./
-RUN pip install -r requirements.lock.txt
+RUN pip install -r requirements.lock.txt pyzipper
 COPY malintx ./malintx
 COPY data ./data
+COPY scripts ./scripts
 COPY .streamlit ./.streamlit
 RUN pip install --no-deps .
-ENV MALINTX_DATA_DIR=/data MALINTX_JADX=/opt/jadx/bin/jadx MALINTX_APKTOOL=/usr/local/bin/apktool MALINTX_API_HOST=0.0.0.0
+ENV MALINTX_ASSETS_DIR=/app/data MALINTX_DATA_DIR=/data MALINTX_JADX=/opt/jadx/bin/jadx MALINTX_APKTOOL=/usr/local/bin/apktool MALINTX_API_HOST=0.0.0.0
 RUN mkdir /data && chown malintx /data
 USER malintx
 VOLUME /data

@@ -48,3 +48,9 @@ var/
 var_sample_report.pdf
 .venv/
 .ruff_cache/
+corpus/
+lab_results/
+demo_samples/
+lab_results_family/
+lab_results_triage/
+dataset/

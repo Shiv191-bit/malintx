@@ -41,6 +41,17 @@ MIGRATIONS: list[tuple[int, str, str]] = [
         );
         """,
     ),
+    (
+        2,
+        "behavioural lineage fingerprints",
+        """
+        CREATE TABLE fingerprints (
+            job_id TEXT PRIMARY KEY REFERENCES jobs(id), sample_sha256 TEXT NOT NULL, package_name TEXT,
+            display_name TEXT, json TEXT NOT NULL, created_at TEXT NOT NULL
+        );
+        CREATE INDEX idx_fp_sample ON fingerprints(sample_sha256);
+        """,
+    ),
 ]
 
 

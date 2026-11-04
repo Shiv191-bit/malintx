@@ -53,7 +53,7 @@ def test_full_workflow_trojan(env):
     assert [st["state"] for st in job["stages"]] == ["done", "done", "skipped", "skipped", "done", "done"]
 
     res = client.get(f"/api/v1/analyses/{job_id}/result").json()
-    assert res["schema_version"] == "1.0" and res["report_available"] is True
+    assert res["schema_version"] == "1.1" and res["report_available"] is True
     assert res["risk"]["classification"] in ("high", "critical") and res["risk"]["score"] >= 80
     assert res["static"]["sample"]["package_name"] == "com.fake.update.service"
     assert res["intel"] is None and res["ai"]["status"] == "not_requested"
@@ -254,11 +254,41 @@ def test_interrupted_jobs_recovered_on_startup(tmp_path):
 
 def test_migrations_idempotent_and_versioned(tmp_path):
     p = tmp_path / "m.db"
-    assert Database(p).schema_version() == 1
-    assert Database(p).schema_version() == 1
+    assert Database(p).schema_version() == 2
+    assert Database(p).schema_version() == 2
 
 
 def test_workspaces_cleaned_after_job(env):
     s, plat, runner, _ = env
     run_job(plat, runner, s, banking_trojan())
     assert not [p for p in s.workspaces_dir.iterdir() if p.is_dir()]
+
+
+def test_relative_data_dir_is_resolved_for_workers(tmp_path, monkeypatch):
+    """Regression: MALINTX_DATA_DIR=./var (from .env) broke the isolated worker, which runs in another cwd."""
+    monkeypatch.chdir(tmp_path)
+    s = Settings(data_dir="./var", _env_file=None)
+    assert s.data_dir.is_absolute() and s.data_dir == (tmp_path / "var").resolve()
+    plat = Platform.create(s)
+    runner = JobRunner(plat)
+    job, result = run_job(plat, runner, s, banking_trojan())
+    runner.shutdown()
+    assert job.status == JobStatus.COMPLETED and result.risk.classification != Classification.ANALYSIS_FAILED
+
+
+def test_assets_dir_is_configurable_and_reaches_the_worker(tmp_path):
+    """Regression (found in Docker): an installed package must locate the ATT&CK dataset via MALINTX_ASSETS_DIR."""
+    import shutil
+
+    from malintx.config import PROJECT_ROOT
+
+    assets = tmp_path / "assets"
+    (assets / "mitre").mkdir(parents=True)
+    shutil.copy(PROJECT_ROOT / "data" / "mitre" / "mobile-attack-20.0.json", assets / "mitre")
+    s = Settings(data_dir=tmp_path / "var", assets_dir=assets, _env_file=None)
+    assert s.mitre_dataset == (assets / "mitre" / "mobile-attack-20.0.json").resolve()
+    plat = Platform.create(s)
+    runner = JobRunner(plat)
+    job, result = run_job(plat, runner, s, banking_trojan())
+    runner.shutdown()
+    assert job.status == JobStatus.COMPLETED and result.static.mitre

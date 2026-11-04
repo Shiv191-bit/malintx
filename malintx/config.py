@@ -9,7 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import AliasChoices, Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -26,6 +26,8 @@ class Settings(BaseSettings):
 
     # ---- storage -----------------------------------------------------------
     data_dir: Path = Field(PROJECT_ROOT / "var", validation_alias=_alias("MALINTX_DATA_DIR"))
+    # Vendored datasets (ATT&CK STIX, MASVS). Set when the package is installed away from the source tree (e.g. in a container).
+    assets_dir: Path = Field(PROJECT_ROOT / "data", validation_alias=_alias("MALINTX_ASSETS_DIR"))
 
     # ---- ingestion limits --------------------------------------------------
     max_upload_mb: int = Field(150, validation_alias=_alias("MALINTX_MAX_UPLOAD_MB", "MAX_APK_SIZE_MB"))
@@ -36,7 +38,7 @@ class Settings(BaseSettings):
     # ---- analysis ----------------------------------------------------------
     analysis_timeout_s: int = Field(600, validation_alias=_alias("MALINTX_ANALYSIS_TIMEOUT_S"))
     worker_threads: int = Field(2, validation_alias=_alias("MALINTX_WORKER_THREADS"))
-    worker_memory_mb: int = Field(3072, validation_alias=_alias("MALINTX_WORKER_MEMORY_MB"))
+    worker_memory_mb: int = Field(6144, validation_alias=_alias("MALINTX_WORKER_MEMORY_MB"))
     java_path: str = Field("", validation_alias=_alias("MALINTX_JAVA"))
     jadx_path: str = Field("", validation_alias=_alias("MALINTX_JADX"))
     apktool_path: str = Field("", validation_alias=_alias("MALINTX_APKTOOL"))
@@ -92,6 +94,12 @@ class Settings(BaseSettings):
 
     log_level: str = Field("INFO", validation_alias=_alias("MALINTX_LOG_LEVEL"))
 
+    @field_validator("data_dir", "assets_dir")
+    @classmethod
+    def _absolute_data_dir(cls, v: Path) -> Path:
+        # Workers run in a different cwd, so a relative MALINTX_DATA_DIR (e.g. "./var" from .env) must be resolved once, here.
+        return v.expanduser().resolve()
+
     # ---- derived paths -----------------------------------------------------
     @property
     def db_path(self) -> Path:
@@ -111,7 +119,7 @@ class Settings(BaseSettings):
 
     @property
     def mitre_dataset(self) -> Path:
-        return PROJECT_ROOT / "data" / "mitre" / "mobile-attack-20.0.json"
+        return self.assets_dir / "mitre" / "mobile-attack-20.0.json"
 
     @property
     def trusted_cert_set(self) -> frozenset[str]:

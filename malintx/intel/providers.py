@@ -145,9 +145,9 @@ class VirusTotal(Provider):
         har, und = int(stats.get("harmless", 0)), int(stats.get("undetected", 0))
         if mal >= VT_MALICIOUS_THRESHOLD:
             verdict = IntelVerdict.KNOWN_MALICIOUS
-        elif mal >= 1 or sus >= 3:
+        elif mal >= 2 or sus >= 3:  # a lone engine hit is routine noise (seen live: 1/90 engines flagged 8.8.8.8)
             verdict = IntelVerdict.SUSPICIOUS
-        elif (har + und) >= 5:
+        elif mal == 0 and sus == 0 and (har + und) >= 5:  # any detection at all rules out "benign observed"
             verdict = IntelVerdict.BENIGN_OBSERVED
         else:
             verdict = IntelVerdict.UNKNOWN

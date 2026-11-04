@@ -12,7 +12,7 @@ from malintx.schemas.analysis import StaticAnalysisResult
 from malintx.tools.runner import run_isolated
 
 _SETTINGS_KEYS = (
-    "data_dir", "slice_radius_lines", "trusted_cert_sha256", "java_path", "jadx_path", "apktool_path",
+    "data_dir", "assets_dir", "slice_radius_lines", "trusted_cert_sha256", "java_path", "jadx_path", "apktool_path",
     "decompiler_timeout_s", "worker_memory_mb",
 )
 
@@ -26,7 +26,7 @@ def run_static_analysis(apk_path: Path, ingested: dict, settings: Settings, work
         "workdir": str(workdir),
         "result_path": str(result_path),
         "use_decompilers": use_decompilers,
-        "settings": {k: (str(getattr(settings, k)) if k == "data_dir" else getattr(settings, k)) for k in _SETTINGS_KEYS},
+        "settings": {k: (str(getattr(settings, k)) if k in ("data_dir", "assets_dir") else getattr(settings, k)) for k in _SETTINGS_KEYS},
     }
     job_path = workdir / "job.json"
     job_path.write_text(json.dumps(job), encoding="utf-8")
@@ -41,6 +41,9 @@ def run_static_analysis(apk_path: Path, ingested: dict, settings: Settings, work
                               + (f": {tail}" if tail else " (possible memory-limit kill)"))
     payload = json.loads(result_path.read_text(encoding="utf-8"))
     if not payload.get("ok"):
+        if payload.get("error_type") == "MemoryError":
+            raise AnalysisError(f"analysis exceeded the {settings.worker_memory_mb} MiB worker memory limit "
+                                "(raise MALINTX_WORKER_MEMORY_MB for very large or heavily split APKs)")
         raise AnalysisError(f"{payload.get('error_type')}: {payload.get('message')}")
     result = StaticAnalysisResult.model_validate(payload["result"])
     for note in res.limits_failed:

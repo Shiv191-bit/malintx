@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from malintx.schemas.common import FindingKind, Severity
 
-RULESET_VERSION = "2026.11-r1"
+RULESET_VERSION = "2026.11-r4"
 
 Sig = tuple[str, tuple[str, ...] | None]
 
@@ -38,6 +38,7 @@ class ApiRule:
     fp_notes: str | None = None
     min_sites: int = 1
     max_evidence: int = 8
+    requires_any: tuple[str, ...] = ()  # rule ids; hit is discarded unless one of them also fired
 
 
 @dataclass(frozen=True)
@@ -91,6 +92,8 @@ class CompositeRule:
     scope: str = "class"  # class: same outer class gives HIGH confidence; app: MEDIUM
     app_scope_severity: Severity | None = None  # severity if only app-level co-occurrence
     class_scope_only: bool = False  # do not fire on app-level co-occurrence
+    unless: tuple[str, ...] = ()  # do not fire if any of these hits exist...
+    unless_overridden_by: tuple[str, ...] = ()  # ...unless one of these also exists
     fp_notes: str | None = None
     masvs: tuple[str, ...] = ()
 
@@ -124,7 +127,7 @@ API_RULES: tuple[ApiRule, ...] = (
         "BroadcastReceiver.abortBroadcast() stops lower-priority receivers from seeing an ordered "
         "broadcast; for SMS_RECEIVED it hides messages from the default SMS app.",
         "sms_suppress", CAP, Severity.LOW,
-        (("Landroid/content/BroadcastReceiver;", ("abortBroadcast", "setResultCode")),),
+        (("Landroid/content/BroadcastReceiver;", ("abortBroadcast",)),),
         fp_notes="Used by many apps for non-SMS ordered broadcasts.",
     ),
     ApiRule(
@@ -152,6 +155,9 @@ API_RULES: tuple[ApiRule, ...] = (
          ("Landroid/view/accessibility/AccessibilityNodeInfo;", ("performAction",))),
         mitre=("T1453",), permissions=("android.permission.BIND_ACCESSIBILITY_SERVICE",),
         fp_notes="Assistive tools, password managers and automation apps legitimately use these APIs.",
+        # performAction() is ordinary accessibility-delegate code in many apps (and in minified bundled libraries);
+        # it is only meaningful when the app is itself an accessibility service. Found on real F-Droid apps.
+        requires_any=("MAN-ACCESSIBILITY-SERVICE", "CLS-ACCESSIBILITY-SERVICE"),
     ),
     ApiRule(
         "API-OVERLAY-WINDOW", "Adds floating window views",
@@ -410,7 +416,7 @@ COMPOSITE_RULES: tuple[CompositeRule, ...] = (
         "The same component reads incoming SMS content and sends SMS programmatically, matching "
         "SMS forwarding / OTP relay behaviour.",
         "behavior:sms_forwarding", Severity.HIGH,
-        (R(("API-SMS-READ", "STR-SMS-PROVIDER")), R(("API-SMS-SEND",))),
+        (R(("API-SMS-READ", "STR-SMS-PROVIDER")), R(("API-SMS-SEND",)), R(("CLS-BROADCAST-RECEIVER",))),
         mitre=("T1636.004", "T1582"), class_scope_only=True,
         fp_notes="Auto-reply and relay apps do this legitimately; check destination numbers.",
     ),
@@ -419,9 +425,30 @@ COMPOSITE_RULES: tuple[CompositeRule, ...] = (
         "A single class reads SMS content, performs network I/O and references a hard-coded "
         "non-allow-listed URL/IP, matching SMS exfiltration to attacker infrastructure.",
         "behavior:sms_exfiltration", Severity.HIGH,
-        (R(("API-SMS-READ", "STR-SMS-PROVIDER")), R(("API-NETWORK",)), R(("IND-ENDPOINT",))),
+        (R(("API-SMS-READ", "STR-SMS-PROVIDER")), R(("API-NETWORK",)), R(("IND-ENDPOINT",)), R(("CLS-BROADCAST-RECEIVER",))),
         mitre=("T1636.004", "T1646"), class_scope_only=True,
         fp_notes="A bank app can legitimately POST an OTP to its own server; the differentiators here are an unallow-listed hard-coded endpoint in the same class as raw SMS handling.",
+    ),
+    CompositeRule(
+        "COMP-LOADER-STUB", "Thin loader stub with dynamic code loading",
+        "The visible application is a tiny stub (a handful of classes) that loads code dynamically and/or has structural archive "
+        "anomalies or a packer signature: the real logic lives outside what static analysis can see. Typical of packed droppers.",
+        "behavior:loader_stub", Severity.HIGH,
+        (R(("API-DYNAMIC-CODE-LOAD",)), R(("ARC-TINY-CODE", "ARC-SUSPICIOUS-ENTRIES", "ARC-PACKER")), R(("ARC-TINY-CODE", "ARC-SUSPICIOUS-ENTRIES"))),
+        mitre=("T1407", "T1406"), scope="app",
+        # commercial protectors (Jiagu etc.) are used by legitimate apps and are reported as 'inconclusive' instead,
+        # unless the archive also shows evasion anomalies
+        unless=("ARC-PACKER",), unless_overridden_by=("ARC-SUSPICIOUS-ENTRIES",),
+        fp_notes="No benign app in the 87-app real corpus had a <=15-class app with DexClassLoader; plugin hosts with tiny cores could.",
+    ),
+    CompositeRule(
+        "COMP-SMS-INTERCEPT-REGISTRATION", "Registers a high-priority SMS receiver and holds SMS permissions",
+        "The manifest registers a receiver for incoming SMS with elevated priority and requests SMS permissions, the standard "
+        "registration used to see OTPs before other apps. (Downgraded for full SMS-client apps.)",
+        "behavior:sms_intercept_registration", Severity.HIGH,
+        (R(("MAN-SMS-PRIORITY",)), R(("MAN-SMS-PERMISSIONS",))),
+        mitre=("T1636.004",), scope="app",
+        fp_notes="Legacy/third-party SMS clients (e.g. SMSSecure) register high-priority receivers; the default-SMS-handler context lowers severity.",
     ),
     CompositeRule(
         "COMP-SMS-SUPPRESSION", "High-priority SMS receiver that aborts the broadcast",
@@ -438,8 +465,8 @@ COMPOSITE_RULES: tuple[CompositeRule, ...] = (
         "behavior:overlay_accessibility", Severity.HIGH,
         (R(("MAN-ACCESSIBILITY-SERVICE", "CLS-ACCESSIBILITY-SERVICE")),
          R(("MAN-OVERLAY-PERM", "API-OVERLAY-WINDOW"))),
-        mitre=("T1453", "T1417.002"), scope="app",
-        fp_notes="Screen-reader or automation apps may hold both capabilities.",
+        mitre=("T1453", "T1417.002"), scope="app", app_scope_severity=Severity.MEDIUM,
+        fp_notes="Remote-control (e.g. KDE Connect), screen-reader and automation apps legitimately hold both capabilities.",
     ),
     CompositeRule(
         "COMP-BANKING-TROJAN-PATTERN", "Banking-trojan capability pattern",
@@ -449,7 +476,10 @@ COMPOSITE_RULES: tuple[CompositeRule, ...] = (
         (R(("MAN-ACCESSIBILITY-SERVICE", "CLS-ACCESSIBILITY-SERVICE")),
          R(("MAN-OVERLAY-PERM", "API-OVERLAY-WINDOW")),
          R(("API-SMS-READ", "STR-SMS-PROVIDER", "API-SMS-SEND", "CLS-NOTIFICATION-LISTENER")),
-         R(("API-NETWORK", "CLS-DEVICE-ADMIN", "MAN-DEVICE-ADMIN", "API-DYNAMIC-CODE-LOAD"))),
+         R(("API-NETWORK", "CLS-DEVICE-ADMIN", "MAN-DEVICE-ADMIN", "API-DYNAMIC-CODE-LOAD")),
+         # abuse marker: something a legitimate app has no reason to do
+         R(("MAN-SMS-PRIORITY", "COMP-SMS-SUPPRESSION", "STR-TARGET-APP-ENUM", "STR-IP-LITERAL-ENDPOINT", "STR-TELEGRAM-BOT-API",
+            "ARC-SUSPICIOUS-ENTRIES", "COMP-DYNAMIC-PAYLOAD-STAGING"))),
         mitre=("T1453", "T1417.002", "T1636.004", "T1517"), scope="app",
         fp_notes="Co-occurrence is app-level, not proof of a single attack chain; review the linked evidence.",
     ),
@@ -458,7 +488,8 @@ COMPOSITE_RULES: tuple[CompositeRule, ...] = (
         "The app can install APKs and can fetch or decrypt code (network or dynamic loading).",
         "behavior:dropper", Severity.HIGH,
         (R(("API-PACKAGE-INSTALL", "MAN-INSTALL-PACKAGES-PERM")),
-         R(("API-DYNAMIC-CODE-LOAD", "API-NETWORK"))),
+         R(("API-DYNAMIC-CODE-LOAD", "API-NETWORK")),
+         R(("MAN-SMS-PRIORITY", "ARC-PACKER", "STR-IP-LITERAL-ENDPOINT", "STR-TELEGRAM-BOT-API", "ARC-SUSPICIOUS-ENTRIES"))),
         mitre=("T1407",), scope="app", app_scope_severity=Severity.MEDIUM,
         fp_notes="App stores and in-app updaters share this shape.",
     ),
@@ -482,7 +513,7 @@ COMPOSITE_RULES: tuple[CompositeRule, ...] = (
         "The app can hide its launcher icon and holds SMS, accessibility or device-admin capability.",
         "behavior:stealth", Severity.HIGH,
         (R(("API-HIDE-LAUNCHER-ICON",)),
-         R(("API-SMS-READ", "MAN-ACCESSIBILITY-SERVICE", "CLS-ACCESSIBILITY-SERVICE", "CLS-DEVICE-ADMIN", "MAN-DEVICE-ADMIN"))),
+         R(("MAN-SMS-PRIORITY", "STR-TELEGRAM-BOT-API", "STR-IP-LITERAL-ENDPOINT", "ARC-PACKER", "ARC-SUSPICIOUS-ENTRIES"))),
         mitre=("T1628.001",), scope="app", app_scope_severity=Severity.MEDIUM,
     ),
     CompositeRule(

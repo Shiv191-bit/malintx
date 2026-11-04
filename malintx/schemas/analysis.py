@@ -89,6 +89,27 @@ class AnalysisCoverage(Model):
         return self.dex_files_parsed > 0 and self.methods > 0
 
 
+class LineageFingerprint(Model):
+    """Hash-free behavioural fingerprint (see malintx/lineage)."""
+
+    api_count: int
+    minhash: str  # 128-slot MinHash over framework APIs called by the app's own code
+    permissions: list[str] = Field(default_factory=list)
+    rule_ids: list[str] = Field(default_factory=list)  # capability/behaviour findings (not posture/info)
+    signer_sha256: list[str] = Field(default_factory=list)
+
+
+class NearMiss(Model):
+    """A high-severity behaviour rule that did NOT fire, and exactly what was missing."""
+
+    rule_id: str
+    title: str
+    satisfied: int
+    total: int
+    missing: list[str]  # human-readable: which requirement groups had no supporting signal
+    note: str = ""
+
+
 class StaticAnalysisResult(Model):
     sample: SampleInfo
     manifest: ManifestInfo
@@ -99,6 +120,8 @@ class StaticAnalysisResult(Model):
     coverage: AnalysisCoverage
     ruleset_version: str
     warnings: list[str] = Field(default_factory=list)
+    lineage: LineageFingerprint | None = None
+    near_misses: list[NearMiss] = Field(default_factory=list)
 
     def evidence_by_id(self) -> dict[str, Evidence]:
         return {e.id: e for e in self.evidence}

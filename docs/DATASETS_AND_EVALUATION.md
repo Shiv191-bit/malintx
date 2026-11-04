@@ -27,5 +27,8 @@ Rules enforced by the manifest: `wild_caught` / `curated_benign` / `open_source_
 ## Reported metrics
 Precision, recall, F1, false-positive and false-negative rate with **Wilson 95% CIs**; abstention rate (`inconclusive`/`insufficient_evidence`/`analysis_failed` are never converted into a verdict: abstaining on malware counts against recall, abstaining on benign is reported separately and is not a false positive); duration (mean/median/p95); extraction coverage; scoring consistency across repeats (same inputs digest and score); ATT&CK technique precision/recall for deterministic rules and, when run with `--ai`, for AI claims (`n/a` otherwise). Per-sample table and provenance breakdown included.
 
+## Scripts
+`scripts/fetch_fdroid.py` (named apps) and `scripts/fetch_fdroid_random.py` (seeded uniform sample) download real F-Droid APKs and write manifests with real provenance; `scripts/run_corpus.py` runs the real pipeline over a manifest.
+
 ## Current state
-No real corpus has been run. Any figure in the original SENTINEL/PPT material (e.g. 97.8%, 98.4% zero-day) comes from the cited papers' ML models, not from MALINT-X, and must not be presented as MALINT-X performance.
+A real benign corpus (87 F-Droid apps) has been run (docs/REAL_DATA_VERIFICATION.md); **no real malware has**. Any figure in the original SENTINEL/PPT material (e.g. 97.8%, 98.4% zero-day) comes from the cited papers' ML models, not from MALINT-X, and must not be presented as MALINT-X performance.

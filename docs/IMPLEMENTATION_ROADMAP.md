@@ -44,8 +44,15 @@ ReportLab PDF with all required sections, deterministic/AI separation, traceabil
 ## Evaluation framework ✅ (framework) / ⛔ (measurements)
 Manifest with enforced provenance and split hygiene, metrics with CIs and abstentions, consistency and ATT&CK-mapping scoring, calibration on calibration split only. **No real malware/benign corpus has been run; no accuracy claim is made anywhere.**
 
+## Real-data verification ✅ (benign) / ⛔ (malware)
+87 real F-Droid APKs analysed; rules tuned on 27, frozen (r3) and measured on 60 random held-out apps: see [REAL_DATA_VERIFICATION.md](REAL_DATA_VERIFICATION.md). **No real malware yet: needs an abuse.ch Auth-Key and an isolated analysis environment.**
+
+## Behavioural lineage + near-miss ✅
+See [LINEAGE.md](LINEAGE.md).
+
 ## Next tasks (priority order)
-1. (done for synthetic APKs) Run the real JADX/Apktool paths on a real benign APK such as an F-Droid build.
+1. (done) Real benign APKs through the pipeline; JADX on large real APKs is still untimed.
+2a. (done) Isolated malware lab run: see [MALWARE_RESULTS.md](MALWARE_RESULTS.md). **Recall is low (10.7% at high+): the main open problem.** Next: family-targeted batch, triage of missed samples, lenient ZIP recovery.
 2. Provide credentials and run each intel adapter once against the live service; record actual response shapes.
 3. Assemble an evaluation corpus (see DATASETS_AND_EVALUATION.md) inside an isolated lab VM; run `malintx-eval`.
 4. Calibrate rule weights on the calibration split; add rules for families found in the corpus (e.g. ATS/overlay variants, native-code loaders).

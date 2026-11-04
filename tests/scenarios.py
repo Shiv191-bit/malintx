@@ -53,7 +53,7 @@ def init(owner, params=()):
 
 
 # ---------------------------------------------------------------------------------------------
-def benign_bank() -> bytes:
+def benign_bank(rename: bool = False, extra: bool = False) -> bytes:
     """Legitimate-looking OTP auto-fill banking app: SMS permission + SMS APIs + SMS Retriever, RASP strings."""
     pkg = "in.examplebank.mobile"
     m = manifest(pkg, perms("INTERNET", "RECEIVE_SMS", "USE_BIOMETRIC", "CAMERA", "ACCESS_FINE_LOCATION"),
@@ -76,6 +76,14 @@ def benign_bank() -> bytes:
         ClassSpec("Lin/examplebank/mobile/security/RootCheck;", OBJ, [
             method("check", [], strings=["/system/bin/su", "com.topjohnwu.magisk", "goldfish", "ranchu"])]),
     ]
+    if extra:  # a repackager's additions: SMS sending + dynamic code loading
+        classes.append(ClassSpec("Lin/examplebank/mobile/Extra;", OBJ, [method("go", [
+            v("Landroid/telephony/SmsManager;", "sendTextMessage", "V", ["Ljava/lang/String;"] * 5),
+            init("Ldalvik/system/DexClassLoader;", ["Ljava/lang/String;"] * 4)])]))
+    if rename:  # identifier obfuscation: framework API usage is untouched
+        names = {c.name: f"La/{chr(97 + i)};" for i, c in enumerate(classes)}
+        for c in classes:
+            c.name = names[c.name]
     return build_apk(m, classes)
 
 
@@ -170,3 +178,49 @@ SCENARIOS = {
     "manifest_only": manifest_only, "broken_dex": broken_dex, "misconfigured_only": misconfigured_only,
     "injection_app": injection_app,
 }
+
+
+def remote_control_like() -> bytes:
+    """Legitimate remote-control app (KDE-Connect-like): accessibility service + overlay + SMS + network, no abuse markers."""
+    a = "android.permission."
+    m = manifest("org.example.remote", perms("INTERNET", "RECEIVE_SMS", "SEND_SMS", "SYSTEM_ALERT_WINDOW"), {"android:allowBackup": False}, [
+        comp("service", ".InputService", exported=True, permission=a + "BIND_ACCESSIBILITY_SERVICE",
+             actions=["android.accessibilityservice.AccessibilityService"])])
+    p = "Lorg/example/remote/"
+    classes = [
+        ClassSpec(p + "InputService;", "Landroid/accessibilityservice/AccessibilityService;", [method("onAccessibilityEvent", [
+            v("Landroid/view/accessibility/AccessibilityNodeInfo;", "performAction", "Z", ["I"]),
+            v("Landroid/view/WindowManager;", "addView", "V", ["Landroid/view/View;", "Landroid/view/ViewGroup$LayoutParams;"])])]),
+        ClassSpec(p + "SmsSync;", OBJ, [method("sync", [
+            st("Landroid/telephony/SmsMessage;", "createFromPdu", "Landroid/telephony/SmsMessage;", ["[B"]),
+            v("Landroid/telephony/SmsManager;", "sendTextMessage", "V", ["Ljava/lang/String;"] * 5),
+            v("Ljavax/net/ssl/HttpsURLConnection;", "getInputStream", "Ljava/io/InputStream;")], strings=["https://remote.example.org/pair"])]),
+    ]
+    return build_apk(m, classes)
+
+
+SCENARIOS["remote_control_like"] = remote_control_like
+
+
+def loader_stub() -> bytes:
+    """Thin packed-dropper shape seen in real malware: 1-class app, DexClassLoader, duplicate archive entries."""
+    m = manifest("com.stub.loader", perms("INTERNET"), None, [])
+    classes = [ClassSpec("Lcom/stub/loader/App;", "Landroid/app/Application;", [method("attachBaseContext", [
+        init("Ldalvik/system/DexClassLoader;", ["Ljava/lang/String;"] * 4)])])]
+    return build_apk(m, classes, duplicate_entries=4)
+
+
+def tiny_benign() -> bytes:
+    """Small legitimate app: few classes, no dynamic code loading, clean archive."""
+    m = manifest("com.tiny.notes", perms("INTERNET"), {"android:allowBackup": False}, [])
+    return build_apk(m, [ClassSpec("Lcom/tiny/notes/Main;", "Landroid/app/Activity;", [method("onCreate", [])])])
+
+
+def sms_interceptor(default_handler: bool = False) -> bytes:
+    acts = ["android.provider.Telephony.SMS_RECEIVED"]
+    comps = [comp("receiver", ".Rx", exported=True, actions=acts, priority=1000)]
+    if default_handler:
+        comps.append(comp("service", ".Respond", exported=True, permission="android.permission.SEND_RESPOND_VIA_MESSAGE",
+                          actions=["android.intent.action.RESPOND_VIA_MESSAGE"]))
+    m = manifest("com.sms.app", perms("RECEIVE_SMS", "READ_SMS"), None, comps)
+    return build_apk(m, [ClassSpec("Lcom/sms/app/Rx;", RECEIVER, [method("onReceive", [], params=(CTX, INTENT))])])

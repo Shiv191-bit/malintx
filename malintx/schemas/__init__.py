@@ -6,7 +6,9 @@ from .analysis import (
     Evidence,
     Finding,
     Indicator,
+    LineageFingerprint,
     MitreMapping,
+    NearMiss,
     StaticAnalysisResult,
 )
 from .common import (

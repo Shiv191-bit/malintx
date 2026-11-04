@@ -35,7 +35,7 @@ def render(client: ApiClient, job_id: str) -> None:
     if static is None:
         theme.unavailable("Analysis details", "static analysis did not complete; no evidence is available for this sample")
         return
-    tabs = st.tabs(["Summary", "Manifest", "Behaviours", "Evidence", "Threat intel", "ATT&CK", "Risk", "AI", "Report"])
+    tabs = st.tabs(["Summary", "Manifest", "Behaviours", "Evidence", "Threat intel", "ATT&CK", "Risk", "Lineage", "AI", "Report"])
     with tabs[0]:
         _summary(res, static, risk)
     with tabs[1]:
@@ -51,8 +51,10 @@ def render(client: ApiClient, job_id: str) -> None:
     with tabs[6]:
         _risk(risk)
     with tabs[7]:
-        _ai(res.get("ai"))
+        _lineage(client, job_id, static)
     with tabs[8]:
+        _ai(res.get("ai"))
+    with tabs[9]:
         _report(client, job_id, res)
 
 
@@ -134,6 +136,12 @@ def _behaviours(static: dict) -> None:
     kinds = {"malicious_behavior": "Correlated malicious behaviour", "suspicious_capability": "Suspicious capability",
              "security_misconfiguration": "Security misconfiguration (not malice)", "informational": "Informational"}
     theme.note("Single API calls are capabilities, not intent. Only correlated patterns are labelled malicious behaviour. Misconfigurations are shown separately.")
+    if static.get("near_misses"):
+        with st.expander(f"Near misses: {len(static['near_misses'])} high-severity pattern(s) this app almost matches"):
+            st.caption("Counterfactual view: for each pattern the rules did NOT report, the one missing signal. This shows how close the app is "
+                       "to a high-severity pattern, and what an evader would have to add.")
+            for n in static["near_misses"]:
+                st.markdown(f"**{theme.md(n['title'])}** — {n['satisfied']}/{n['total']} requirements met. Missing: _{theme.md('; '.join(n['missing']))}_")
     sel = st.multiselect("Show", list(kinds), default=["malicious_behavior", "suspicious_capability"], format_func=lambda k: kinds[k])
     items = [f for f in static["findings"] if f["kind"] in sel]
     if not items:
@@ -253,6 +261,40 @@ def _risk(risk: dict | None) -> None:
                 "Diminishing returns within a behaviour group (1, 0.5, 0.25…; cap 24). Capabilities already part of a composite count half. Threat-intel adds points only when a provider returned data. "
                 "Bands: <10 informational, <30 low, <55 medium, <80 high, ≥80 critical. Inconclusive / insufficient-evidence / failed are never forced into a malware-or-benign label.")
     st.caption(f"Engine {risk['engine_version']} · rule set {risk['ruleset_version']} · inputs digest {risk['inputs_digest']}")
+
+
+def _lineage(client: ApiClient, job_id: str, static: dict) -> None:
+    theme.note("Hash-free lineage: a MinHash sketch of the framework APIs this app's own code calls. Obfuscators can rename classes but not "
+               "`SmsManager.sendTextMessage`, so variants, repacks and version drift of one codebase stay similar even when every file hash differs.")
+    sim = client.similar(job_id)
+    if not sim["available"]:
+        theme.unavailable("Lineage", sim["reason"])
+        return
+    fp = static["lineage"]
+    st.caption(f"Fingerprint over {fp['api_count']:,} distinct framework APIs · compared against {sim['compared_against']} other analysed sample(s)")
+    if not sim["matches"]:
+        st.caption("No other analysed sample is similar (≥ 0.30). Analyse more samples to build lineage.")
+    else:
+        df = pd.DataFrame([{"Job": m["job_id"], "Package": m["package"], "API similarity": m["api_similarity"], "Permissions": m["permission_similarity"],
+                            "Behaviours": m["behaviour_similarity"], "Same signer": m["same_signer"], "Interpretation": m["relation"]} for m in sim["matches"]])
+        st.dataframe(df, hide_index=True, width="stretch")
+        st.caption("Bands calibrated on real apps: unrelated pairs rarely exceed 0.64; related families have a median of 0.78. A match is a lead, not proof.")
+        pick = st.selectbox("Capability diff against", [m["job_id"] for m in sim["matches"]],
+                            format_func=lambda j: next(f"{m['package']} ({m['api_similarity']:.2f})" for m in sim["matches"] if m["job_id"] == j))
+        d = client.diff(pick, job_id)
+        st.subheader("What this sample adds relative to the match")
+        theme.note(d["summary"])
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**Permissions added**")
+            st.write(d["permissions_added"] or "none")
+            st.markdown("**Components added**")
+            st.write(d["components_added"][:15] or "none")
+        with c2:
+            st.markdown("**Findings added**")
+            st.dataframe(pd.DataFrame(d["findings_added"]) if d["findings_added"] else pd.DataFrame({"none": []}), hide_index=True, width="stretch")
+            st.markdown("**Indicators added**")
+            st.write([f"{i['type']}: {i['value']}" for i in d["indicators_added"][:15]] or "none")
 
 
 def _ai(ai: dict | None) -> None:

@@ -1,0 +1,439 @@
+{
+  "name": "fdroid-benign",
+  "version": "2026.11.03",
+  "description": "Open-source F-Droid apps; label=benign by provenance (open-source, audited repo), not by VirusTotal.",
+  "samples": [
+    {
+      "path": "org.fdroid.fdroid_1023052.apk",
+      "sha256": "985f5181d48bb6bafd54083a048b391271e0ab28385881cc41294fb01a222762",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.fdroid.fdroid_1023052.apk",
+        "retrieved_at": "2026-11-03T14:35:48+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.fdroid.fdroid versionCode 1023052"
+    },
+    {
+      "path": "org.smssecure.smssecure_211.apk",
+      "sha256": "f3fbe2887e8d394adc80567420928e5edb3795ff0ecf497b0ec4aad499fcffe7",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.smssecure.smssecure_211.apk",
+        "retrieved_at": "2026-11-03T14:35:56+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.smssecure.smssecure versionCode 211"
+    },
+    {
+      "path": "org.fossify.messages_26.apk",
+      "sha256": "7077dae6613d7a9d775841c4c10be16e255f8af8d5152bc84a5e6984740b56e1",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.fossify.messages_26.apk",
+        "retrieved_at": "2026-11-03T14:36:00+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.fossify.messages versionCode 26"
+    },
+    {
+      "path": "org.fossify.phone_22.apk",
+      "sha256": "d1ad08467034e5138a6e68f03b6e150f0bb010dfcbf490ff3d2bd4822b755728",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.fossify.phone_22.apk",
+        "retrieved_at": "2026-11-03T14:36:06+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.fossify.phone versionCode 22"
+    },
+    {
+      "path": "eu.faircode.netguard_2026080101.apk",
+      "sha256": "158b4308da0006298d22ed557adbff24b282fddeb1bc0b3468829a60f405a8c4",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/eu.faircode.netguard_2026080101.apk",
+        "retrieved_at": "2026-11-03T14:36:09+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "eu.faircode.netguard versionCode 2026080101"
+    },
+    {
+      "path": "de.blinkt.openvpn_225.apk",
+      "sha256": "6d2d6dc8b84bd3c6628427d8dee5139eb48bd729d4a97442b441187e9899f698",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/de.blinkt.openvpn_225.apk",
+        "retrieved_at": "2026-11-03T14:36:48+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "de.blinkt.openvpn versionCode 225"
+    },
+    {
+      "path": "org.schabi.newpipe_1015.apk",
+      "sha256": "1d66d19eedbab969b1be2e44e0ea35f5f8921cbe83b5c5ac810767ca1a84b7e8",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.schabi.newpipe_1015.apk",
+        "retrieved_at": "2026-11-03T14:37:02+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.schabi.newpipe versionCode 1015"
+    },
+    {
+      "path": "com.menny.android.anysoftkeyboard_8175.apk",
+      "sha256": "daa95017e673f8f533fbcfa6839673ad76d66f1ad17f288d2220f751fcc258a6",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/com.menny.android.anysoftkeyboard_8175.apk",
+        "retrieved_at": "2026-11-03T14:37:17+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "com.menny.android.anysoftkeyboard versionCode 8175"
+    },
+    {
+      "path": "org.kde.kdeconnect_tp_13700.apk",
+      "sha256": "a51c6e85585748b44b42fb409229effb333f7758e5e7cbfff2f480a62530dd01",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.kde.kdeconnect_tp_13700.apk",
+        "retrieved_at": "2026-11-03T14:37:21+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.kde.kdeconnect_tp versionCode 13700"
+    },
+    {
+      "path": "org.openhab.habdroid_599.apk",
+      "sha256": "15465bc845560bd14bee0e47fc59dc4ed70fa522dc7c94306e2ba4fd89bf40a1",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.openhab.habdroid_599.apk",
+        "retrieved_at": "2026-11-03T14:37:25+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.openhab.habdroid versionCode 599"
+    },
+    {
+      "path": "com.amaze.filemanager_126.apk",
+      "sha256": "627b8cd6a5f750dc8315ebb0fadeddfea8ff76700922049d4dbf0ca22f3397fd",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/com.amaze.filemanager_126.apk",
+        "retrieved_at": "2026-11-03T14:37:35+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "com.amaze.filemanager versionCode 126"
+    },
+    {
+      "path": "com.aurora.store_76.apk",
+      "sha256": "fd9c75d90d0f4a7c132b9b4a5a2cf1992a45e03b8d8ff988b7dcfbc0db2c4d11",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/com.aurora.store_76.apk",
+        "retrieved_at": "2026-11-03T14:37:44+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "com.aurora.store versionCode 76"
+    },
+    {
+      "path": "org.fossify.contacts_13.apk",
+      "sha256": "6a89be96b5ec39f5e2b11bd61dc7031f4b88261b324ab13af5743fbc62f0cddb",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.fossify.contacts_13.apk",
+        "retrieved_at": "2026-11-03T14:37:49+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.fossify.contacts versionCode 13"
+    },
+    {
+      "path": "org.fossify.gallery_30.apk",
+      "sha256": "9a9f2e06882abfdae6f4c86aeaa83ae8102b2e081591df0eb2134a6f629657c7",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.fossify.gallery_30.apk",
+        "retrieved_at": "2026-11-03T14:38:20+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.fossify.gallery versionCode 30"
+    },
+    {
+      "path": "org.fossify.clock_10.apk",
+      "sha256": "43cf9f0ec45f1f1ff2df47286622e5b8f3acedaeb07b7f7641b5243dbedca079",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.fossify.clock_10.apk",
+        "retrieved_at": "2026-11-03T14:38:25+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.fossify.clock versionCode 10"
+    },
+    {
+      "path": "org.fossify.calendar_24.apk",
+      "sha256": "dae815ce83285facf9fd8648b8c4f039700d95126325db124521eba479b270ba",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.fossify.calendar_24.apk",
+        "retrieved_at": "2026-11-03T14:38:29+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.fossify.calendar versionCode 24"
+    },
+    {
+      "path": "app.organicmaps_26092932.apk",
+      "sha256": "654a736d43317084f13560281fe7013f869800610e9d6036b6789d9c9e07f8bc",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/app.organicmaps_26092932.apk",
+        "retrieved_at": "2026-11-03T14:39:12+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "app.organicmaps versionCode 26092932"
+    },
+    {
+      "path": "com.fsck.k9_39046.apk",
+      "sha256": "0f9dd57fbd06dddfd8bcf7de6106d27fa0f0297793193828c4eac904518b1e05",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/com.fsck.k9_39046.apk",
+        "retrieved_at": "2026-11-03T14:39:18+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "com.fsck.k9 versionCode 39046"
+    },
+    {
+      "path": "net.thunderbird.android_33.apk",
+      "sha256": "473b33da5963d0a4261a834c845aaf8e3878309565e9f40e61f6e5def21565e5",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/net.thunderbird.android_33.apk",
+        "retrieved_at": "2026-11-03T14:39:26+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "net.thunderbird.android versionCode 33"
+    },
+    {
+      "path": "org.briarproject.briar.android_10523.apk",
+      "sha256": "7c9376f5246e7f68e601966cb53b44b9715db320637e86b22257e269535e0819",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.briarproject.briar.android_10523.apk",
+        "retrieved_at": "2026-11-03T14:39:58+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.briarproject.briar.android versionCode 10523"
+    },
+    {
+      "path": "com.ichi2.anki_225033004.apk",
+      "sha256": "c7056f611c66fc91a8e290e18268a0d708e813704f51c66e4af1534d468f6790",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/com.ichi2.anki_225033004.apk",
+        "retrieved_at": "2026-11-03T14:40:29+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "com.ichi2.anki versionCode 225033004"
+    },
+    {
+      "path": "org.tasks_151202.apk",
+      "sha256": "ed972cc1cec3456a11992435a3fcf132d1311f1e8dfd27758265122fbc206ce0",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.tasks_151202.apk",
+        "retrieved_at": "2026-11-03T14:40:48+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.tasks versionCode 151202"
+    },
+    {
+      "path": "org.moire.opensudoku_20261008.apk",
+      "sha256": "ac4c6c8d0bc9058c1cc8d8f4570dc51977b3bc51577a82a12b94e6ec7714b9f0",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.moire.opensudoku_20261008.apk",
+        "retrieved_at": "2026-11-03T14:40:58+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.moire.opensudoku versionCode 20261008"
+    },
+    {
+      "path": "at.bitfire.davdroid_405210002.apk",
+      "sha256": "41cf9832d97c31e3fc694e5c66b38990dec3312936cc336141714db07259081b",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/at.bitfire.davdroid_405210002.apk",
+        "retrieved_at": "2026-11-03T14:41:09+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "at.bitfire.davdroid versionCode 405210002"
+    },
+    {
+      "path": "org.jellyfin.mobile_2070399.apk",
+      "sha256": "f9f4b3ab46cc9434df811194c2d4351417f4db83a4c1a0facd0a662d69533f7f",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/org.jellyfin.mobile_2070399.apk",
+        "retrieved_at": "2026-11-03T14:41:16+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "org.jellyfin.mobile versionCode 2070399"
+    },
+    {
+      "path": "io.github.muntashirakon.AppManager_451.apk",
+      "sha256": "e1f6ba10812c74016ad626e11e27a1ae450aec2c0964a11466abb9e7a9c8ef84",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/io.github.muntashirakon.AppManager_451.apk",
+        "retrieved_at": "2026-11-03T14:41:31+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "io.github.muntashirakon.AppManager versionCode 451"
+    },
+    {
+      "path": "me.zhanghai.android.files_40.apk",
+      "sha256": "2fe900bf43d725b655008d438f5ca46d0da0f301e3784403b5b96c3fc2df6e8a",
+      "label": "benign",
+      "split": "test",
+      "family": null,
+      "expected_techniques": [],
+      "source": {
+        "name": "F-Droid",
+        "provenance": "open_source_build",
+        "url": "https://f-droid.org/repo/me.zhanghai.android.files_40.apk",
+        "retrieved_at": "2026-11-03T14:41:40+00:00",
+        "license_note": "open-source app; per-app licence applies"
+      },
+      "notes": "me.zhanghai.android.files versionCode 40"
+    }
+  ]
+}

@@ -17,7 +17,7 @@ from malintx.analysis.rules.manifest_rules import Hit, evaluate_manifest
 from malintx.analysis.sample_info import build_sample_info
 from malintx.config import Settings
 from malintx.mitre import get_catalog
-from malintx.schemas.analysis import Finding, StaticAnalysisResult
+from malintx.schemas.analysis import Finding, NearMiss, StaticAnalysisResult
 from malintx.schemas.common import Confidence, EvidenceKind, FindingKind, Severity
 from malintx.schemas.sample import ManifestInfo, ZipInspection
 
@@ -49,8 +49,16 @@ def _scan_resources(apk: Any, collector: IndicatorCollector, warnings: list[str]
 
 
 def _archive_findings(archive: ZipInspection | None, packer_hints: list[str], obfuscation: float | None,
-                      store: EvidenceStore) -> list[Hit]:
+                      store: EvidenceStore, classes: int = 0, methods: int = 0) -> list[Hit]:
     hits: list[Hit] = []
+    if archive and archive.dex_files and 0 < classes <= 15 and methods <= 80:
+        h = Hit("ARC-TINY-CODE", total_sites=1)
+        ev = store.add(kind=EvidenceKind.CLASS_STRUCTURE, rule_id=h.rule_id, source_file="classes.dex", extraction_method="class-count",
+                       artifact=f"{classes} classes / {methods} methods", snippet=f"application code consists of only {classes} classes and {methods} methods",
+                       limitations="Small apps exist legitimately; this is only meaningful together with dynamic code loading or archive anomalies.")
+        if ev:
+            h.evidence_ids.append(ev.id)
+        hits.append(h)
     if archive and archive.suspicious_entries:
         h = Hit("ARC-SUSPICIOUS-ENTRIES", total_sites=len(archive.suspicious_entries))
         for reason in archive.suspicious_entries[:6]:
@@ -88,6 +96,9 @@ _ARCHIVE_META = {
     "ARC-PACKER": ("Commercial packer / protector signature",
         "File or class names match a known app protector. Protected code limits what static analysis can see.",
         "packing", FindingKind.SUSPICIOUS_CAPABILITY, Severity.LOW, ("T1406.002",)),
+    "ARC-TINY-CODE": ("Thin-stub application code",
+        "The app's own code is only a handful of classes; its real behaviour may live in assets, native code or downloaded payloads.",
+        "packing", FindingKind.INFORMATIONAL, Severity.INFO, ()),
     "ARC-OBFUSCATED-NAMES": ("Heavily renamed identifiers",
         "Most app classes use one- or two-character names.", "obfuscation", FindingKind.INFORMATIONAL,
         Severity.INFO, ()),
@@ -125,6 +136,7 @@ def analyze_apk(apk_path: Path, ingested: dict[str, Any], settings: Settings) ->
     if cov.usable_code:
         hits.update(engine.run_api_rules(backend, manifest, store, radius))
         hits.update(engine.run_class_rules(backend, store))
+        hits.update(engine.run_receiver_classes(backend, manifest))
         strings = list(backend.strings())
         hits.update(engine.run_string_rules(strings, manifest, store, backend, radius))
     else:
@@ -139,10 +151,12 @@ def analyze_apk(apk_path: Path, ingested: dict[str, Any], settings: Settings) ->
     ep = engine.endpoint_hit(endpoint_classes, ind_ev)
     if ep:
         hits[ep.rule_id] = ep
-    for h in _archive_findings(archive, cov.packer_hints, cov.obfuscation_ratio, store):
+    for h in _archive_findings(archive, cov.packer_hints, cov.obfuscation_ratio, store, cov.classes, cov.methods):
         hits[h.rule_id] = h
 
+    engine.apply_prerequisites(hits)
     composites = engine.run_composites(hits)
+    near = engine.near_misses(hits, composites)
     findings = engine.build_findings({k: v for k, v in hits.items() if not k.startswith("ARC-")}, composites)
     for rid, h in hits.items():
         if rid.startswith("ARC-") and h.evidence_ids:
@@ -162,8 +176,20 @@ def analyze_apk(apk_path: Path, ingested: dict[str, Any], settings: Settings) ->
     referenced = {e for f in findings for e in f.evidence_ids} | {e for i in indicators for e in i.evidence_ids}
     evidence = [e for e in store.all() if e.id in referenced]
 
+    lineage = None
+    if cov.usable_code:
+        from malintx.lineage import minhash
+        from malintx.schemas.analysis import LineageFingerprint
+
+        apis = backend.framework_api_set()
+        lineage = LineageFingerprint(
+            api_count=len(apis), minhash=minhash(apis), permissions=sorted(manifest.permission_names()),
+            rule_ids=sorted({f.rule_id for f in findings if f.kind in (FindingKind.MALICIOUS_BEHAVIOR, FindingKind.SUSPICIOUS_CAPABILITY)}),
+            signer_sha256=sorted(c.sha256 for c in sample.certificates),
+        )
+
     return StaticAnalysisResult(
         sample=sample, manifest=manifest, evidence=evidence, findings=findings, indicators=indicators,
         mitre=build_mappings(findings, catalog), coverage=cov, ruleset_version=cat.RULESET_VERSION,
-        warnings=warnings,
+        warnings=warnings, lineage=lineage, near_misses=[NearMiss(**n) for n in near],
     )

@@ -171,6 +171,22 @@ class AndroguardBackend:
         sites.sort(key=lambda s: (s.caller_class, s.caller_method, s.offset, s.callee_method))
         return sites
 
+    _FRAMEWORK = ("Landroid/", "Ljava/", "Ljavax/", "Ldalvik/", "Lorg/json/", "Lorg/xml/", "Lorg/w3c/", "Lkotlin/jvm/")
+
+    def framework_api_set(self) -> set[str]:
+        """Framework methods called by the app's own (non-library) code, as `Lcls;->name`. Names cannot be
+        obfuscated, so this set survives renaming/repackaging."""
+        apis: set[str] = set()
+        for cls in self._dx.get_classes():
+            if not cls.is_external() or not cls.name.startswith(self._FRAMEWORK):
+                continue
+            for m in cls.get_methods():
+                for caller_cls, _caller_m, _off in m.get_xref_from():
+                    if not is_library_class(caller_cls.name):
+                        apis.add(f"{cls.name}->{m.name}")
+                        break
+        return apis
+
     def subclass_map(self, base_classes: set[str]) -> dict[str, list[str]]:
         """Map each base class to the internal classes that extend it (transitively)."""
         extends: dict[str, str] = {}

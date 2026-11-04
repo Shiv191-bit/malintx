@@ -1,0 +1,4 @@
+A all-APIs                 related median 0.78 | unrelated median 0.22 p99 0.64 | related above unrelated-p99: 14/17 | AUC~0.994
+B capability-namespaces    related median 0.59 | unrelated median 0.12 p99 0.53 | related above unrelated-p99: 12/17 | AUC~0.987
+C IDF-weighted (reference) related median 0.58 | unrelated median 0.08 p99 0.45 | related above unrelated-p99: 15/17 | AUC~0.995
+apps 74, avg API-set size 2573

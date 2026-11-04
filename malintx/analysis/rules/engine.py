@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from malintx.analysis.backends.base import CallSite, CodeBackend, StringRef, is_library_class, outer_class
 from malintx.analysis.rules import catalog as cat
 from malintx.analysis.rules.evidence import EvidenceStore
-from malintx.analysis.rules.manifest_rules import MANIFEST_RULES, Hit, ManifestRuleMeta
+from malintx.analysis.rules.manifest_rules import MANIFEST_RULES, Hit, ManifestRuleMeta, class_desc
 from malintx.schemas.analysis import Finding
 from malintx.schemas.common import Confidence, EvidenceKind, FindingKind, Severity
 from malintx.schemas.sample import ManifestInfo
@@ -157,6 +157,26 @@ def run_string_rules(strings: list[StringRef], manifest: ManifestInfo, store: Ev
     return hits
 
 
+def run_receiver_classes(backend: CodeBackend, manifest: ManifestInfo) -> dict[str, Hit]:
+    """Correlation helper (not a finding): classes that are broadcast receivers, from DEX inheritance or the manifest."""
+    base = "Landroid/content/BroadcastReceiver;"
+    classes = {c for c in backend.subclass_map({base}).get(base, []) if not is_library_class(c)}
+    classes |= {class_desc(c.name) for c in manifest.components if c.kind == "receiver"}
+    if not classes:
+        return {}
+    return {"CLS-BROADCAST-RECEIVER": Hit("CLS-BROADCAST-RECEIVER", classes=set(classes))}
+
+
+def apply_prerequisites(hits: dict[str, Hit]) -> list[str]:
+    """Discard API hits whose rule needs a corroborating structural signal that is absent. Returns dropped rule ids."""
+    dropped = []
+    for rule in cat.ALL_API_RULES:
+        if rule.requires_any and rule.id in hits and not any(r in hits and not hits[r].library_only for r in rule.requires_any):
+            del hits[rule.id]
+            dropped.append(rule.id)
+    return dropped
+
+
 def run_target_app_enum(package_refs_by_class: dict[str, set[str]], store: EvidenceStore) -> dict[str, Hit]:
     hits: dict[str, Hit] = {}
     for cls, refs in sorted(package_refs_by_class.items()):
@@ -198,39 +218,70 @@ class CompositeResult:
     evidence_ids: list[str]
 
 
+def _evaluate_composite(rule: cat.CompositeRule, hits: dict[str, Hit]) -> CompositeResult | None:
+    if any(u in hits for u in rule.unless) and not any(o in hits for o in rule.unless_overridden_by):
+        return None
+    groups: list[list[Hit]] = []
+    for req in rule.requires:
+        present = [hits[r] for r in req.rule_ids if r in hits and not hits[r].library_only]
+        if not present:
+            return None
+        groups.append(present)
+    class_sets = [set().union(*(h.classes for h in g)) for g in groups]
+    class_level = bool(set.intersection(*class_sets)) if class_sets else False
+    if not class_level and rule.class_scope_only:
+        return None
+    if class_level:
+        severity, conf = rule.severity, Confidence.HIGH
+    else:
+        severity, conf = rule.app_scope_severity or rule.severity, Confidence.MEDIUM
+    components = sorted({h.rule_id for g in groups for h in g})
+    if any(h.confidence == Confidence.LOW for g in groups for h in g):  # a low-confidence input caps the composite
+        conf = _lower(conf)
+    ev: list[str] = []
+    for g in groups:
+        for h in g:
+            ev.extend(e for e in h.evidence_ids[:4] if e not in ev)
+    return CompositeResult(rule, class_level, severity, conf, components, ev[:16])
+
+
 def run_composites(hits: dict[str, Hit]) -> list[CompositeResult]:
-    out: list[CompositeResult] = []
+    """Evaluate composite rules to a fixpoint: a composite may require another composite as a corroborating signal."""
+    fired: dict[str, CompositeResult] = {}
+    work = dict(hits)
+    for _ in range(len(cat.COMPOSITE_RULES)):
+        progressed = False
+        for rule in cat.COMPOSITE_RULES:
+            if rule.id in fired:
+                continue
+            res = _evaluate_composite(rule, work)
+            if res is None:
+                continue
+            fired[rule.id] = res
+            # expose the composite to later rules; it spans the whole app (no class correlation implied)
+            work[rule.id] = Hit(rule.id, evidence_ids=res.evidence_ids, confidence=res.confidence)
+            progressed = True
+        if not progressed:
+            break
+    return [fired[r.id] for r in cat.COMPOSITE_RULES if r.id in fired]
+
+
+def near_misses(hits: dict[str, Hit], fired: list[CompositeResult]) -> list[dict]:
+    """High-severity composites that did not fire although all-but-one requirement groups were satisfied."""
+    metas = all_rule_meta()
+    done = {c.rule.id for c in fired}
+    out = []
     for rule in cat.COMPOSITE_RULES:
-        groups: list[list[Hit]] = []
-        ok = True
+        if rule.id in done or rule.severity < Severity.HIGH or len(rule.requires) < 3:
+            continue
+        missing = []
         for req in rule.requires:
-            present = [hits[r] for r in req.rule_ids if r in hits and not hits[r].library_only]
-            if not present:
-                ok = False
-                break
-            groups.append(present)
-        if not ok:
-            continue
-        class_sets = [set().union(*(h.classes for h in g)) for g in groups]
-        common = set.intersection(*class_sets) if class_sets else set()
-        class_level = bool(common)
-        if not class_level and rule.class_scope_only:
-            continue
-        if class_level:
-            severity, conf = rule.severity, Confidence.HIGH
-        else:
-            severity = rule.app_scope_severity or rule.severity
-            conf = Confidence.MEDIUM
-        components = sorted({h.rule_id for g in groups for h in g})
-        # If any contributing observation is itself low-confidence, so is the composite.
-        if any(h.confidence == Confidence.LOW for g in groups for h in g):
-            conf = _lower(conf)
-        ev: list[str] = []
-        for g in groups:
-            for h in g:
-                preferred = [e for e in h.evidence_ids]
-                ev.extend(e for e in preferred[:4] if e not in ev)
-        out.append(CompositeResult(rule, class_level, severity, conf, components, ev[:16]))
+            if not any(r in hits and not hits[r].library_only for r in req.rule_ids):
+                missing.append(" or ".join(metas[r].title if r in metas else r for r in req.rule_ids[:4]))
+        satisfied = len(rule.requires) - len(missing)
+        if len(missing) == 1:
+            out.append({"rule_id": rule.id, "title": rule.title, "satisfied": satisfied, "total": len(rule.requires),
+                        "missing": missing, "note": "Only this one signal separates the app from this pattern."})
     return out
 
 
@@ -287,11 +338,14 @@ def build_findings(
     for comp in composites:
         meta = metas[comp.rule.id]
         scope = "within the same class" if comp.class_level else "app-wide (not confirmed to be the same code path)"
+        severity, ctx = comp.severity, []
+        if comp.rule.id == "COMP-SMS-INTERCEPT-REGISTRATION" and "MAN-DEFAULT-SMS-HANDLER" in hits and severity > Severity.MEDIUM:
+            severity, ctx = Severity.MEDIUM, ["CTX-SMS-CLIENT"]  # a full SMS client legitimately registers for SMS
         findings.append(Finding(
             id=f"F-{comp.rule.id}", rule_id=comp.rule.id, title=meta.title,
             description=f"{meta.description} Correlation scope: {scope}. Built from: {', '.join(comp.components)}.",
-            kind=FindingKind.MALICIOUS_BEHAVIOR, severity=comp.severity, confidence=comp.confidence,
-            category=meta.category, evidence_ids=comp.evidence_ids, mitre_ids=list(meta.mitre),
+            kind=FindingKind.MALICIOUS_BEHAVIOR, severity=severity, confidence=comp.confidence,
+            category=meta.category, evidence_ids=comp.evidence_ids, mitre_ids=list(meta.mitre), suppressed_by=ctx,
             masvs=list(meta.masvs), composite_of=comp.components, false_positive_notes=meta.fp_notes,
             limitations="Behavioural correlation of static signals; no execution was performed.",
         ))

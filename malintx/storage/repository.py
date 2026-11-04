@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from malintx.errors import NotFoundError
+from malintx.schemas.analysis import LineageFingerprint
 from malintx.schemas.common import JobStatus
 from malintx.schemas.results import AnalysisResult, JobInfo, StageRecord
 from malintx.storage.db import Database, utcnow
@@ -122,6 +123,28 @@ class Repository:
                 (result.job.id, result.schema_version, result.model_dump_json(),
                  risk.classification.value if risk else None, risk.score if risk else None, pkg, utcnow()),
             )
+        self._save_fingerprint(result)
+
+    def _save_fingerprint(self, result: AnalysisResult) -> None:
+        st = result.static
+        if st is None or st.lineage is None:
+            return
+        with self.db.tx() as c:
+            c.execute(
+                "INSERT INTO fingerprints(job_id,sample_sha256,package_name,display_name,json,created_at) VALUES (?,?,?,?,?,?) "
+                "ON CONFLICT(job_id) DO UPDATE SET json=excluded.json",
+                (result.job.id, st.sample.sha256, st.sample.package_name, result.job.display_name, st.lineage.model_dump_json(), utcnow()),
+            )
+
+    def all_fingerprints(self, exclude_job: str | None = None) -> list[tuple[str, dict[str, Any], LineageFingerprint]]:
+        """One fingerprint per distinct sample (latest job), for similarity search."""
+        with self.db.connect() as c:
+            rows = c.execute(
+                "SELECT f.* FROM fingerprints f JOIN (SELECT sample_sha256, MAX(created_at) m FROM fingerprints GROUP BY sample_sha256) x "
+                "ON x.sample_sha256=f.sample_sha256 AND x.m=f.created_at"
+            ).fetchall()
+        return [(r["job_id"], {"sha256": r["sample_sha256"], "package": r["package_name"], "name": r["display_name"]},
+                 LineageFingerprint.model_validate_json(r["json"])) for r in rows if r["job_id"] != exclude_job]
 
     def get_result(self, job_id: str) -> AnalysisResult | None:
         with self.db.connect() as c:

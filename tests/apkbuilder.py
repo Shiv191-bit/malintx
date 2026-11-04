@@ -378,6 +378,7 @@ def build_apk(
     raw_dex: bytes | None = None,
     extra_files: dict[str, bytes] | None = None,
     extra_dex: list[list[ClassSpec]] | None = None,
+    duplicate_entries: int = 0,
 ) -> bytes:
     buf = io.BytesIO()
     stamp = (2024, 1, 1, 0, 0, 0)
@@ -397,6 +398,9 @@ def build_apk(
             add(zf, f"classes{i}.dex", build_dex(extra))
         for name, content in (extra_files or {}).items():
             add(zf, name, content)
+        for i in range(duplicate_entries):  # duplicate entry names: a known archive-parser evasion
+            add(zf, "assets/blob.bin", bytes([i]) * 64)
+            add(zf, "assets/blob.bin", bytes([i + 1]) * 64)
         if sign:
             mf = b"Manifest-Version: 1.0\r\nCreated-By: malintx-tests\r\n\r\n"
             sf = b"Signature-Version: 1.0\r\nCreated-By: malintx-tests\r\n\r\n"

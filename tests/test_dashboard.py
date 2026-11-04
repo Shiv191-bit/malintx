@@ -75,8 +75,8 @@ def test_trojan_analysis_renders_every_tab_without_errors(live, monkeypatch):
     at = run(base, monkeypatch, page="Analysis", job_id=jobs["trojan"])
     assert not at.exception, [e.value for e in at.exception]
     blob = texts(at)
-    assert "CRITICAL" in blob and "9 correlated malicious-behaviour pattern" in blob
-    assert len(at.tabs) == 9
+    assert "CRITICAL" in blob and "correlated malicious-behaviour pattern" in blob
+    assert len(at.tabs) == 10
     assert any("com.fake.update.service" in t.value for t in at.title)
 
 

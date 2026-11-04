@@ -1,0 +1,18 @@
+apps compared: 74  related pairs: 16  unrelated pairs: 2665
+RELATED   min 0.57  median 0.80  max 1.00
+UNRELATED p50 0.19  p95 0.53  p99 0.66  max 0.87
+threshold 0.45: related recovered 16/16 (100%), unrelated falsely linked 272/2665 (10.21%)
+threshold 0.55: related recovered 16/16 (100%), unrelated falsely linked 109/2665 (4.09%)
+threshold 0.65: related recovered 13/16 (81%), unrelated falsely linked 31/2665 (1.16%)
+threshold 0.75: related recovered 10/16 (62%), unrelated falsely linked 5/2665 (0.19%)
+threshold 0.85: related recovered 3/16 (19%), unrelated falsely linked 1/2665 (0.04%)
+lowest related pairs: [(0.5703, 'org.fossify.contacts', 'org.fossify.gallery'), (0.6406, 'org.fossify.contacts', 'org.fossify.calendar'), (0.6406, 'org.fossify.contacts', 'org.fossify.clock'), (0.6797, 'org.fossify.messages', 'org.fossify.contacts')]
+highest-scoring pairs NOT in my ground-truth families:
+   0.87  com.nicue.onetwo  <->  de.kromke.andreas.cameradatefolders
+   0.80  info.metadude.android.bitsundbaeume.schedule  <->  info.metadude.android.rc3.schedule
+   0.76  org.fossify.phone  <->  jp.nonbili.nori
+   0.76  cz.kutner.why  <->  page.ooooo.geoshare
+   0.75  org.moire.opensudoku  <->  com.eiyooooo.foldswitcher
+   0.74  org.fossify.clock  <->  jp.nonbili.nori
+   0.73  org.moire.opensudoku  <->  de.kromke.andreas.cameradatefolders
+   0.72  cz.kutner.why  <->  de.wivewa.dialer

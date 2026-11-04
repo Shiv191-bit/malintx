@@ -57,6 +57,12 @@ class ApiClient:
         resp = self._request("GET", f"/analyses/{job_id}/result")
         return resp.json() if resp.status_code == 200 else None
 
+    def similar(self, job_id: str, limit: int = 8, min_similarity: float = 0.3) -> dict[str, Any]:
+        return self._request("GET", f"/analyses/{job_id}/similar", params={"limit": limit, "min_similarity": min_similarity}).json()
+
+    def diff(self, base: str, other: str) -> dict[str, Any]:
+        return self._request("GET", "/diff", params={"base": base, "other": other}).json()
+
     def report(self, job_id: str) -> bytes | None:
         try:
             return self._request("GET", f"/analyses/{job_id}/report").content

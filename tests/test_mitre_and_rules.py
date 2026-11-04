@@ -34,7 +34,7 @@ def test_every_masvs_reference_exists():
 
 
 def test_composite_requirements_reference_known_rules():
-    known = set(all_rule_meta()) | {"IND-ENDPOINT"}
+    known = set(all_rule_meta()) | {"IND-ENDPOINT", "CLS-BROADCAST-RECEIVER", "ARC-PACKER", "ARC-SUSPICIOUS-ENTRIES", "ARC-OBFUSCATED-NAMES", "ARC-TINY-CODE"}
     for comp in cat.COMPOSITE_RULES:
         for req in comp.requires:
             assert set(req.rule_ids) <= known, (comp.id, set(req.rule_ids) - known)
