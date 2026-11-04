@@ -21,9 +21,11 @@ def open_job(job_id: str) -> None:
 
 
 def overview(client: ApiClient) -> None:
-    st.title("Overview")
+    theme.page_header("Overview", "Evidence-based triage of Android samples. Static analysis only: nothing is executed.")
     ov = client.overview()
     hist = client.history(200)
+    if not ov["jobs_total"]:
+        theme.empty_state("No analyses yet", "Open Analyze and upload an APK, or load the synthetic demo samples with scripts/seed_demo.py.")
     c = st.columns(4)
     with c[0]:
         theme.kpi("Analyses", ov["jobs_total"], "all jobs recorded")
@@ -40,7 +42,7 @@ def overview(client: ApiClient) -> None:
         st.subheader("Results by classification")
         data = ov["results_by_classification"]
         if not data:
-            st.caption("No completed analyses yet. Upload an APK to begin.")
+            st.caption("No completed analyses yet.")
         else:
             df = pd.DataFrame({"classification": list(data), "count": list(data.values())})
             st.altair_chart(alt.Chart(df).mark_bar().encode(
@@ -76,12 +78,12 @@ def _history_table(rows: list[dict], key: str) -> None:
 
 
 def history(client: ApiClient) -> None:
-    st.title("History")
+    theme.page_header("History", "Every analysis recorded on this instance. Select one to open it.")
     _history_table(client.history(200), key="hist")
 
 
 def upload(client: ApiClient) -> None:
-    st.title("Analyze an APK")
+    theme.page_header("Analyze an APK", "Static analysis only. The sample is never installed or executed.")
     cfg = client.config()
     st.markdown("Upload a sample for **static analysis only**. The APK is never installed or executed. "
                 f"Limit {cfg['limits']['max_upload_mb']} MiB; the file name and MIME type are not trusted.")
@@ -132,7 +134,7 @@ def progress(client: ApiClient, job_id: str) -> None:
 
 
 def configuration(client: ApiClient) -> None:
-    st.title("Configuration and integrations")
+    theme.page_header("Configuration", "Integrations, limits and tooling detected on this host. Secrets are never shown.")
     cfg = client.config()
     v = cfg["versions"]
     st.subheader("Versions")

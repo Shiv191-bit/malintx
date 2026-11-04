@@ -4,14 +4,35 @@
     {
       "name": "malintx-api",
       "runtimeExecutable": "C:/Projects/malintx/.venv/Scripts/python.exe",
-      "runtimeArgs": ["-m", "malintx.api.app"],
+      "runtimeArgs": [
+        "-m",
+        "malintx.api.app"
+      ],
       "port": 8750
     },
     {
       "name": "malintx-dashboard",
       "runtimeExecutable": "C:/Projects/malintx/.venv/Scripts/python.exe",
-      "runtimeArgs": ["-m", "streamlit", "run", "malintx/dashboard/app.py", "--server.port", "8501", "--server.headless", "true"],
+      "runtimeArgs": [
+        "-m",
+        "streamlit",
+        "run",
+        "malintx/dashboard/app.py",
+        "--server.port",
+        "8501",
+        "--server.headless",
+        "true"
+      ],
       "port": 8501
+    },
+    {
+      "name": "malintx-api-demo",
+      "runtimeExecutable": "C:/Projects/malintx/.venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "-c",
+        "import os,runpy;os.environ['MALINTX_DATA_DIR']='C:/Projects/malintx/var_demo';runpy.run_module('malintx.api.app',run_name='__main__')"
+      ],
+      "port": 8750
     }
   ]
 }

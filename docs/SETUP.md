@@ -16,6 +16,15 @@ copy .env.example .env                                          # all keys optio
 ```
 Open `http://localhost:8501/?job=<id>` to deep-link an analysis.
 
+### Demo data
+Seed a **clean** data directory with the synthetic demo samples (plus two real F-Droid builds if you have them) so every dashboard page has content:
+```bash
+set MALINTX_DATA_DIR=var_demo
+.venv\Scripts\python -m malintx.api.app                       # terminal 1
+.venv\Scripts\python scripts/seed_demo.py                     # terminal 2; add --enrich for passive intel on the trojan-pattern sample
+```
+See [JUDGE_DEMO.md](JUDGE_DEMO.md).
+
 ## Optional tooling
 Verified combination: Microsoft OpenJDK 21 (`winget install Microsoft.OpenJDK.21`), JADX 1.5.6 and Apktool 3.0.3 (GitHub releases). Apktool ships as a jar: create a launcher (`apktool.bat` running `java -jar apktool.jar %*`).
 JADX/Apktool need a JRE (≥ 11). Install them yourself (e.g. a JDK package, then releases from the skylot/jadx and iBotPeaches/Apktool GitHub pages) and set `MALINTX_JAVA`, `MALINTX_JADX`, `MALINTX_APKTOOL`. `GET /api/v1/config` reports `bytecode+source` mode when found. Without them everything works in `bytecode-only` mode.

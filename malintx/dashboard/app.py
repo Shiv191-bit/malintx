@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import streamlit as st
 
-from malintx.dashboard import theme, views_analysis, views_basic
+from malintx.dashboard import theme, views_analysis, views_basic, views_c2
 from malintx.dashboard.client import ApiClient, ApiError, ApiUnreachable
 
-PAGES = ["Overview", "Analyze", "Analysis", "History", "Configuration"]
+PAGES = ["Overview", "Analyze", "Analysis", "Infrastructure", "History", "Configuration"]
 
 
 def main() -> None:
-    st.set_page_config(page_title="MALINT-X", page_icon="◈", layout="wide")
+    st.set_page_config(page_title="MALINT-X", layout="wide")
     theme.inject()
     client = ApiClient()
     st.session_state.setdefault("page", "Overview")
@@ -19,8 +19,8 @@ def main() -> None:
     if linked and not st.session_state.get("_deeplink_applied"):  # shareable link: ?job=<analysis id>
         st.session_state.update(job_id=linked, page="Analysis", _deeplink_applied=True)
     with st.sidebar:
-        st.markdown("### ◈ MALINT-X")
-        st.caption("Android malware analysis & threat intelligence")
+        st.markdown('<div class="mx-brand">MALINT<span>-X</span></div><div class="mx-tag">Android malware analysis and threat intelligence</div>',
+                    unsafe_allow_html=True)
         page = st.radio("Navigate", PAGES, key="page", label_visibility="collapsed")
         if st.session_state.get("job_id"):
             st.caption(f"Current analysis: `{st.session_state['job_id']}`")
@@ -40,6 +40,8 @@ def main() -> None:
             else:
                 st.title("Analysis")
                 st.caption("No analysis selected. Upload an APK or open one from History.")
+        elif page == "Infrastructure":
+            views_c2.page(client)
         elif page == "History":
             views_basic.history(client)
         else:

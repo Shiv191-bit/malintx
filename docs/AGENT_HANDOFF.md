@@ -7,9 +7,12 @@ All phases in [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) except the 
 Package `malintx/` (see ARCHITECTURE.md). API `python -m malintx.api.app`, dashboard `streamlit run malintx/dashboard/app.py`, eval CLI `python -m malintx.evaluation.cli`. Runtime data under `var/` (git-ignored; contains four synthetic demo jobs from the browser check, safe to delete).
 
 ## Tests actually run (final run)
-* `pytest tests`: **193 passed**, 0 failed (~56 s). `ruff check malintx tests`: clean.
+* `pytest tests`: **201 passed**, 0 failed (~56 s). `ruff check malintx tests`: clean.
 * Browser verification (built-in browser pane): Overview, Analysis (Summary + Evidence tabs), Configuration rendered real API data; no exceptions on page.
 * Covered: ingestion limits, isolated worker (timeout, env scrub, Windows Job Object memory limit), rule scenarios (benign OTP bank, trojan pattern, packed, no-DEX, broken DEX, misconfig-only, injection), ATT&CK/MASVS ID integrity, risk determinism/FP behaviour, intel adapters (mocked), AI grounding/validation (mocked), API e2e + auth + rate limits + oversize streaming, failure isolation per stage, PDF content, dashboard (AppTest incl. markdown-injection), evaluation metrics/manifests.
+
+## Frontend and C2 view (2026-11-04)
+Dashboard restyled (flat, light, one blue accent; tokens in `malintx/dashboard/theme.py`; `.streamlit/config.toml` base light). New: `malintx/infra.py` (pure aggregation, the "C2 map" proposed in the SENTINEL brief), `GET /infrastructure`, `malintx/dashboard/graph.py` (self-contained, escaped SVG), `views_c2.py` (Infrastructure page + per-analysis "Network / C2" tab). Extractor now drops OID-like "IPs", CIDR bases, multicast and Java/field-name "domains" (found on real apps). Demo: `scripts/seed_demo.py` (use a clean `MALINTX_DATA_DIR`), `.claude/launch.json` has `malintx-api-demo` (data dir `var_demo`). CI workflow is staged at `docs/ci-workflow.yml.example` (the push token lacked `workflow` scope): copy it to `.github/workflows/ci.yml` with a token that has that scope. Presentation wording and claims to drop: `docs/PRESENTATION.md`. Streamlit does not hot-reload imported modules reliably: restart the dashboard after editing `theme.py`/`graph.py`. Not done: compose `up` was not exercised (only `docker compose config`); no geographic map (deliberate, see JUDGE_DEMO.md).
 
 ## Malware work (2026-11-04)
 See MALWARE_RESULTS.md. Ruleset is now **r4**. The malware *held-out* batch has been used once; benign hold-out #2 (seed 20261104) is also used. Any new rule change needs fresh held-out sets. Lab: `python scripts/malware_lab.py build|fetch|analyze`; report with `scripts/lab_report.py`. Keys are in `.env` (never print them).

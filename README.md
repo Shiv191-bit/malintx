@@ -32,6 +32,7 @@ Most mobile-malware tooling hands you a score and asks you to trust it. MALINT-X
 | **Behavioural findings** | Static findings, each linked to supporting evidence |
 | **Indicators** | Extracted IOCs for downstream use |
 | **Threat intelligence** *(optional, passive)* | Enrichment from external intel sources |
+| **C2 infrastructure map** | Embedded IPs, IP-literal URLs, Telegram bot endpoints and domains, with passive ASN/country/port/detection data when you opt in, and hosts shared across samples |
 | **AI interpretation** *(optional)* | Plain-language explanation layered on top of the evidence |
 | **ATT&CK mapping** | MITRE ATT&CK for Mobile technique mapping |
 | **Risk assessment** | Deterministic, explainable, reproducible |
@@ -99,14 +100,15 @@ Full instructions: [docs/SETUP.md](docs/SETUP.md).
 
 | Status | Scope |
 |---|---|
-| **Verified** | 193 automated tests; lint clean; 87 real F-Droid APKs; live VirusTotal, Shodan and MalwareBazaar calls; JADX 1.5.6 and Apktool 3.0.3; Docker image and isolated malware lab |
+| **Verified** | 201 automated tests; lint clean; 87 real F-Droid APKs; live VirusTotal, Shodan and MalwareBazaar calls; JADX 1.5.6 and Apktool 3.0.3; Docker image and isolated malware lab |
 | **Not verified** | Live LLM providers (no key; mock-tested only); Koodous; native-code malware; banking apps as benign controls |
 
 Details: [Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md), [Real-data verification](docs/REAL_DATA_VERIFICATION.md).
 
 ## Demo and functionality
 * [Functionality](docs/FUNCTIONALITY.md): everything the platform does, with its limits.
-* [Judge demo guide](docs/JUDGE_DEMO.md): an 8-minute script using `python scripts/make_demo_samples.py` (synthetic samples, no malware needed).
+* [Judge demo guide](docs/JUDGE_DEMO.md): an 8-minute script; seed demo data with `python scripts/seed_demo.py` (synthetic samples, no malware needed).
+* [Presentation content](docs/PRESENTATION.md): slide-ready wording that matches the measured results, and which draft-deck claims to drop.
 
 ## Documentation
 

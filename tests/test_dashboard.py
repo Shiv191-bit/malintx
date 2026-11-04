@@ -37,7 +37,7 @@ def live(tmp_path_factory):
     base = f"http://127.0.0.1:{port}"
     jobs = {}
     with httpx.Client(base_url=base + "/api/v1", timeout=120) as c:
-        for name, fn in (("trojan", banking_trojan), ("bank", benign_bank), ("packed", packed_app)):
+        for name, fn in (("trojan", banking_trojan), ("bank", benign_bank), ("packed", packed_app), ("c2", lambda: banking_trojan(c2_demo=True, pkg="com.c2.demo"))):
             jid = c.post("/analyses", files={"file": (f"{name}.apk", fn(), "application/octet-stream")}).json()["job"]["id"]
             runner.wait(jid, 180)
             jobs[name] = jid
@@ -67,7 +67,7 @@ def test_overview_shows_real_counts(live, monkeypatch):
     blob = texts(at)
     assert "Overview" in blob and "Recent analyses" in blob
     kpis = " ".join(m.value for m in at.markdown if "mx-kpi-value" in m.value)
-    assert ">3<" in kpis  # three analyses submitted through the real API
+    assert ">4<" in kpis  # four analyses submitted through the real API
 
 
 def test_trojan_analysis_renders_every_tab_without_errors(live, monkeypatch):
@@ -76,7 +76,7 @@ def test_trojan_analysis_renders_every_tab_without_errors(live, monkeypatch):
     assert not at.exception, [e.value for e in at.exception]
     blob = texts(at)
     assert "CRITICAL" in blob and "correlated malicious-behaviour pattern" in blob
-    assert len(at.tabs) == 10
+    assert len(at.tabs) == 11
     assert any("com.fake.update.service" in t.value for t in at.title)
 
 
@@ -143,3 +143,22 @@ def test_hostile_certificate_subject_cannot_inject_links(live, monkeypatch):
     captions = [c.value for c in at.caption if "Certificate" in c.value]
     assert captions and "\[Verify your account\]\(http\://evil\.example/login\)" in captions[0]
     assert "[Verify your account](http://evil.example/login)" not in captions[0]
+
+
+def test_infrastructure_page_shows_map_and_honesty_notes(live, monkeypatch):
+    base, _ = live
+    at = run(base, monkeypatch, page="Infrastructure")
+    assert not at.exception
+    body = texts(at)
+    assert "Infrastructure" in body and "Map" in body
+    assert "not proof of command-and-control" in body and "No host has been looked up" in body  # no intel requested: say so
+    assert any("45.33.32.156" in m.value and "<svg" in m.value for m in at.markdown)  # the hard-coded IP is drawn in the SVG map
+
+
+def test_analysis_c2_tab_for_sample_with_and_without_network_refs(live, monkeypatch):
+    base, jobs = live
+    at = run(base, monkeypatch, page="Analysis", job_id=jobs["c2"])
+    assert not at.exception
+    assert any("Telegram Bot API endpoint" in m.value for m in at.markdown)
+    at = run(base, monkeypatch, page="Analysis", job_id=jobs["packed"])
+    assert not at.exception

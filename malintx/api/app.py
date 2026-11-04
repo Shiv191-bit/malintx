@@ -167,6 +167,14 @@ def create_app(settings: Settings | None = None, platform: Platform | None = Non
         return {"job_id": job_id, "available": True, "api_count": fp.api_count, "compared_against": len(p.repo.all_fingerprints(exclude_job=job_id)),
                 "matches": matches, "method": "MinHash(128) over framework APIs called by app code; estimates Jaccard similarity"}
 
+    @router.get("/infrastructure")
+    def infrastructure(request: Request, limit: int = 200) -> dict[str, Any]:
+        """Network hosts referenced by analysed samples, with any passive intel the analyst opted into, and which samples share them."""
+        from malintx import infra
+
+        items = [(m, r.model_dump(mode="json")) for m, r in plat(request).repo.latest_results(min(max(limit, 1), 500))]
+        return infra.build(items)
+
     @router.get("/diff")
     def diff(request: Request, base: str, other: str) -> dict[str, Any]:
         """Capability delta: what `other` has that `base` lacks (repackaging / version-drift analysis)."""

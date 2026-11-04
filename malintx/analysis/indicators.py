@@ -43,6 +43,13 @@ NOISE_DOMAIN_SUFFIXES = (
     "eclipse.org", "example.com", "example.org", "example.net", "localhost", "kotlinlang.org", "gradle.org",
     "slf4j.org", "jetbrains.com", "xmlsoap.org", "ietf.org", "unicode.org", "iana.org", "openid.net",
 )
+# X.500 / ISO object-identifier arcs look exactly like IPv4 addresses ("2.5.29.14" is an X.509 extension OID, very common in
+# bundled crypto libraries). Found as noise in real apps (BouncyCastle); no C2 lives in these arcs.
+_OID_ARCS = ("0.9.", "1.2.", "1.3.", "2.5.", "2.16.")
+# Reverse-DNS roots that are code identifiers, not hostnames ("java.net", "android.app").
+_CODE_ROOTS = {"java", "javax", "android", "androidx", "kotlin", "kotlinx", "dalvik", "libcore", "jdk", "sun"}
+# "Domains" with these TLDs are overwhelmingly field/column/property names ("workspec.id", "user.name", "camerax.core.target.name").
+_FIELDLIKE_TLDS = {"id", "name", "info", "date", "space"}
 WELL_KNOWN_RESOLVERS = {"8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1", "9.9.9.9", "208.67.222.222", "208.67.220.220"}
 
 _TRAIL = ".,;:)]}'\"!?>"
@@ -128,9 +135,11 @@ class IndicatorCollector:
             if ip_s in url_hosts:
                 continue
             ip = ipaddress.ip_address(ip_s)
-            if not ip.is_global:
+            if not ip.is_global or ip.is_multicast or ip_s.startswith(_OID_ARCS):
                 continue
             octets = [int(o) for o in ip_s.split(".")]
+            if octets[2] == 0 and octets[3] == 0:
+                continue  # network/CIDR base address (carrier range tables), not a host
             # Version-string guard: a bare "x.y.z.w" with small octets is far more often a version.
             if s.strip() == ip_s and max(octets) < 20 and ip_s not in WELL_KNOWN_RESOLVERS:
                 continue
@@ -163,6 +172,8 @@ class IndicatorCollector:
             return
         if labels[0].lower() in _PKG_ROOTS and len(labels) >= 3:
             return  # package/class-like, not a hostname
+        if labels[0].lower() in _CODE_ROOTS or labels[-1].lower() in _FIELDLIKE_TLDS:
+            return
         if _DOMAIN.fullmatch(c.lower()) and not _is_noise_host(c):
             self._add(IndicatorType.DOMAIN, c.lower(), ref, source)
 

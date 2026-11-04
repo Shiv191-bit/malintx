@@ -1,6 +1,6 @@
 # MALINT-X: what it does
 
-Static Android malware analysis and threat-intel platform. **Evidence first, intelligence second, AI third.** Samples are never executed. Everything below exists in this repository and is covered by tests (193 passing); weak or unmeasured items are marked.
+Static Android malware analysis and threat-intel platform. **Evidence first, intelligence second, AI third.** Samples are never executed. Everything below exists in this repository and is covered by tests (201 passing); weak or unmeasured items are marked.
 
 ## 1. Pipeline (one APK in, one explainable assessment out)
 | Stage | What it does | Notes |
@@ -12,6 +12,7 @@ Static Android malware analysis and threat-intel platform. **Evidence first, int
 | Rule engine (ruleset `2026.11-r4`) | API/class/string/manifest rules plus composite behaviours with exact-class correlation, prerequisites, library-namespace filtering, `unless` guards | Findings carry evidence IDs back to concrete code or manifest locations |
 | Near-miss analysis | For each high-severity behaviour that did **not** fire: how many requirements were met and exactly what was missing | Explains why an app is *not* called a trojan |
 | Behavioural lineage | MinHash (128) fingerprint over framework APIs used by app code; `/similar` and `/diff` find related apps without hashes and show capability differences | Calibrated on real apps (related median 0.78 vs unrelated 0.22); only a few real families tested |
+| Infrastructure ("C2") view | Network indicators (hard-coded public IPs, IP-literal URLs, Telegram bot endpoints, domains) are drawn sample -> reference -> hosting owner, ranked by how unusual the reference is, with ASN/owner/country/open ports/detections only when a passive provider lookup returned them; hosts shared by several samples are listed as pivots. Never contacts any host | A reference is a lead, not proof of C2; country is hosting location, not operator; no data is never shown as safe. OID strings, CIDR bases and Java identifiers are filtered from the extractor |
 | Threat intel (opt-in, passive) | VirusTotal, Shodan, MalwareBazaar (+ experimental Koodous): retry/backoff, rate limiting, caching, host-pinned, consent-gated | Verified live for VT/Shodan/MalwareBazaar; Koodous unverified |
 | AI interpretation (opt-in, advisory) | Anthropic / Gemini / OpenAI-compatible; claims must cite evidence IDs and pass schema validation; prompt-injection isolated; **never a scoring input** | Verified with mocks only (no key available) |
 | MITRE ATT&CK for Mobile | Findings mapped to technique IDs (dataset v20) | IDs integrity-tested |
@@ -22,11 +23,11 @@ Static Android malware analysis and threat-intel platform. **Evidence first, int
 `malicious_behavior` (composites only) | `suspicious_capability` | `security_misconfiguration` | `informational`. Misconfigurations never add to the risk score.
 
 ## 3. Interfaces
-* **API** (`python -m malintx.api.app`, `127.0.0.1:8750`, optional bearer token, rate limits): `GET /health`, `/config`, `/overview`; `POST /analyses`; `GET /analyses`, `/analyses/{id}`, `/analyses/{id}/result`, `/analyses/{id}/report` (PDF), `/analyses/{id}/similar`, `/diff`.
-* **Dashboard** (`streamlit run malintx/dashboard/app.py`): pages Overview, Analyze, Analysis, History, Configuration. The Analysis page has tabs Summary, Manifest, Behaviours, Evidence, Threat intel, ATT&CK, Risk, Lineage, AI, Report. Deep link: `?job=<id>`.
+* **API** (`python -m malintx.api.app`, `127.0.0.1:8750`, optional bearer token, rate limits): `GET /health`, `/config`, `/overview`, `/infrastructure`; `POST /analyses`; `GET /analyses`, `/analyses/{id}`, `/analyses/{id}/result`, `/analyses/{id}/report` (PDF), `/analyses/{id}/similar`, `/diff`.
+* **Dashboard** (`streamlit run malintx/dashboard/app.py`): pages Overview, Analyze, Analysis, Infrastructure, History, Configuration. Flat light design (no gradients, glow or translucency). The Analysis page has tabs Summary, Manifest, Behaviours, Evidence, Network / C2, Threat intel, ATT&CK, Risk, Lineage, AI, Report. Deep link: `?job=<id>`.
 * **Evaluation CLI** (`python -m malintx.evaluation.cli`): manifest-provenance rules, Wilson confidence intervals, abstention accounting, calibration on a separate split.
 * **Malware lab** (`scripts/malware_lab.py build|fetch|analyze`): Docker-only. Fetch container (network on, never unzips) and analysis container (`--network none`, read-only fs, all capabilities dropped, no-new-privileges, memory/pids limits). Nothing is installed or executed.
-* **Demo samples** (`scripts/make_demo_samples.py`): six synthetic APKs, no malware needed.
+* **Demo data**: `scripts/make_demo_samples.py` writes synthetic APKs; `scripts/seed_demo.py` loads them into a running API (optionally with passive intel).
 
 ## 4. Measured results (real data, rules frozen before measuring; see MALWARE_RESULTS.md and REAL_DATA_VERIFICATION.md)
 | Claim | Result |

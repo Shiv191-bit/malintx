@@ -60,6 +60,9 @@ class ApiClient:
     def similar(self, job_id: str, limit: int = 8, min_similarity: float = 0.3) -> dict[str, Any]:
         return self._request("GET", f"/analyses/{job_id}/similar", params={"limit": limit, "min_similarity": min_similarity}).json()
 
+    def infrastructure(self) -> dict[str, Any]:
+        return self._request("GET", "/infrastructure").json()
+
     def diff(self, base: str, other: str) -> dict[str, Any]:
         return self._request("GET", "/diff", params={"base": base, "other": other}).json()
 

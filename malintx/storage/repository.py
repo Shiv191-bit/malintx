@@ -146,6 +146,17 @@ class Repository:
         return [(r["job_id"], {"sha256": r["sample_sha256"], "package": r["package_name"], "name": r["display_name"]},
                  LineageFingerprint.model_validate_json(r["json"])) for r in rows if r["job_id"] != exclude_job]
 
+    def latest_results(self, limit: int = 200) -> list[tuple[dict[str, Any], AnalysisResult]]:
+        """Latest completed result per distinct sample (newest first), for cross-sample views such as shared infrastructure."""
+        with self.db.connect() as c:
+            rows = c.execute(
+                "SELECT r.json, j.id AS job_id, j.display_name, r.classification, r.score FROM results r JOIN jobs j ON j.id=r.job_id "
+                "JOIN (SELECT j2.sample_sha256 sha, MAX(j2.created_at) m FROM jobs j2 JOIN results r2 ON r2.job_id=j2.id GROUP BY j2.sample_sha256) x "
+                "ON x.sha=j.sample_sha256 AND x.m=j.created_at ORDER BY j.created_at DESC LIMIT ?", (limit,),
+            ).fetchall()
+        return [({"job_id": r["job_id"], "name": r["display_name"], "classification": r["classification"], "score": r["score"]},
+                 AnalysisResult.model_validate_json(r["json"])) for r in rows]
+
     def get_result(self, job_id: str) -> AnalysisResult | None:
         with self.db.connect() as c:
             row = c.execute("SELECT json FROM results WHERE job_id=?", (job_id,)).fetchone()

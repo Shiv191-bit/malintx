@@ -12,6 +12,7 @@ Base path `/api/v1`. All errors use `{"error": {"code": str, "message": str}}`. 
 | `GET /analyses/{id}` | `JobInfo` with per-stage state/message | poll until `status ∈ {completed, failed}` |
 | `GET /analyses/{id}/result` | full `AnalysisResult` (200) or `{job, result:null}` (202 while running); 404 if none | failed jobs still have a result (`analysis_failed`) |
 | `GET /analyses/{id}/similar?limit&min_similarity` | hash-free lineage matches (MinHash over framework APIs) | `available:false` when the sample has no analysable code |
+| `GET /infrastructure?limit=` | network hosts referenced by analysed samples (latest result per sample): role, passive-intel summary (ASN/owner/country/ports/families only when a provider returned them), which samples share each host | `queried:false` hosts have verdict `unknown` (never "safe"); roles are descriptions of the reference, not verdicts |
 | `GET /diff?base=&other=` | capability delta between two analyses + similarity | 404 unless both have static results |
 | `GET /analyses/{id}/report` | PDF, header `X-Report-SHA256` | 404 if not generated |
 

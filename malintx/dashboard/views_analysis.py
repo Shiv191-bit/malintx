@@ -8,7 +8,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from malintx.dashboard import theme
+from malintx.dashboard import theme, views_c2
 from malintx.dashboard.client import ApiClient
 from malintx.dashboard.views_basic import progress
 
@@ -35,7 +35,7 @@ def render(client: ApiClient, job_id: str) -> None:
     if static is None:
         theme.unavailable("Analysis details", "static analysis did not complete; no evidence is available for this sample")
         return
-    tabs = st.tabs(["Summary", "Manifest", "Behaviours", "Evidence", "Threat intel", "ATT&CK", "Risk", "Lineage", "AI", "Report"])
+    tabs = st.tabs(["Summary", "Manifest", "Behaviours", "Evidence", "Network / C2", "Threat intel", "ATT&CK", "Risk", "Lineage", "AI", "Report"])
     with tabs[0]:
         _summary(res, static, risk)
     with tabs[1]:
@@ -45,24 +45,29 @@ def render(client: ApiClient, job_id: str) -> None:
     with tabs[3]:
         _evidence(static)
     with tabs[4]:
-        _intel(res.get("intel"), static)
+        views_c2.tab(res, job_id)
     with tabs[5]:
-        _mitre(static, res.get("ai"))
+        _intel(res.get("intel"), static)
     with tabs[6]:
-        _risk(risk)
+        _mitre(static, res.get("ai"))
     with tabs[7]:
-        _lineage(client, job_id, static)
+        _risk(risk)
     with tabs[8]:
-        _ai(res.get("ai"))
+        _lineage(client, job_id, static)
     with tabs[9]:
+        _ai(res.get("ai"))
+    with tabs[10]:
         _report(client, job_id, res)
 
 
 def _banner(risk: dict) -> None:
-    color = theme.CLASSIFICATION.get(risk["classification"], "#94a3b8")
-    score = f"{risk['score']}/100" if risk["score"] is not None else "n/a"
-    st.markdown(f'<div class="mx-banner" style="--c:{color}"><span class="cls">{risk["classification"].replace("_", " ").upper()}</span>'
-                f'&nbsp;&nbsp;<span class="mx-muted">evidence-based score {score}</span><br><span style="font-size:.92rem">{escape(risk["summary"])}</span></div>',
+    color = theme.CLASSIFICATION.get(risk["classification"], theme.MUTED)
+    score = risk["score"]
+    meter = (f'<div class="mx-kpi-label">Risk score</div><div class="mx-kpi-value">{score}<span class="mx-muted"> / 100</span></div>'
+             f'<div class="mx-meter"><i style="width:{score}%"></i></div><div class="mx-meter-scale"><span>0</span><span>30</span><span>55</span><span>80</span><span>100</span></div>'
+             if score is not None else '<div class="mx-kpi-label">Risk score</div><div class="mx-kpi-value">n/a</div><div class="mx-muted">withheld: not enough evidence</div>')
+    st.markdown(f'<div class="mx-banner" style="--c:{color}"><div><div class="cls">{risk["classification"].replace("_", " ").upper()}</div>'
+                f'<div class="sub">Deterministic, evidence-based. AI is not an input.</div><div class="txt">{escape(risk["summary"])}</div></div><div>{meter}</div></div>',
                 unsafe_allow_html=True)
 
 
@@ -148,8 +153,8 @@ def _behaviours(static: dict) -> None:
         st.caption("No findings of the selected kinds.")
     for f in items:
         with st.expander(f"{f['severity'].upper()} · {f['title']}  ({f['id']})"):
-            st.markdown(theme.sev_badge(f["severity"]) + " " + theme.badge(f["kind"].replace("_", " "), "#94a3b8") + " "
-                        + theme.badge(f"{f['confidence']} confidence", "#38bdf8"), unsafe_allow_html=True)
+            st.markdown(theme.sev_badge(f["severity"]) + " " + theme.badge(f["kind"].replace("_", " "), theme.MUTED) + " "
+                        + theme.badge(f"{f['confidence']} confidence", theme.ACCENT), unsafe_allow_html=True)
             st.write(theme.md(f["description"]))
             if f["false_positive_notes"]:
                 st.caption(theme.md("Legitimate-use context: " + f["false_positive_notes"]))
@@ -200,7 +205,7 @@ def _intel(intel: dict | None, static: dict) -> None:
     if not intel or not intel["requested"]:
         theme.unavailable("Threat intelligence", "not requested for this analysis, so no data left this host. Extracted indicators are UNKNOWN, not safe.")
         return
-    st.markdown(" ".join(theme.badge(f"{k}: {v}", "#38bdf8" if v == "ok" else "#fbbf24") for k, v in intel["providers"].items()), unsafe_allow_html=True)
+    st.markdown(" ".join(theme.badge(f"{k}: {v}", theme.ACCENT if v == "ok" else theme.WARN) for k, v in intel["providers"].items()), unsafe_allow_html=True)
     st.markdown(f"**Sample hash verdict:** {theme.badge(intel['sample_verdict'], theme.VERDICT[intel['sample_verdict']])}", unsafe_allow_html=True)
     for lk in intel["sample_lookups"]:
         st.caption(theme.md(f"{lk['provider']}: {lk['status']} — {lk['detail'] or ''} {('· ' + lk['reference_url']) if lk['reference_url'] else ''}"))
@@ -229,7 +234,7 @@ def _mitre(static: dict, ai: dict | None) -> None:
         st.dataframe(pd.DataFrame([{"Technique": t["technique_id"], "Name": t["technique_name"], "Tactics": ", ".join(t["tactics"]), "Confidence": t["confidence"],
                                     "Evidence": ", ".join(t["evidence_ids"][:3]), "Rationale": t["rationale"]} for t in m]), hide_index=True, width="stretch")
         tactics = pd.Series([tac for t in m for tac in t["tactics"]]).value_counts().rename_axis("tactic").reset_index(name="techniques")
-        st.altair_chart(alt.Chart(tactics).mark_bar(color="#38bdf8").encode(y=alt.Y("tactic:N", sort="-x", title=None), x=alt.X("techniques:Q", title="techniques mapped")).properties(height=max(100, 32 * len(tactics))),
+        st.altair_chart(alt.Chart(tactics).mark_bar(color=theme.ACCENT).encode(y=alt.Y("tactic:N", sort="-x", title=None), x=alt.X("techniques:Q", title="techniques mapped")).properties(height=max(100, 32 * len(tactics))),
                         width="stretch")
     if ai and ai["status"] == "completed" and ai["accepted_mitre"]:
         st.subheader("AI-suggested (advisory, evidence-validated)")
@@ -250,7 +255,7 @@ def _risk(risk: dict | None) -> None:
         theme.kpi("Posture issues", risk["security_posture_issues"], "reported separately from malice")
     if risk["contributions"]:
         df = pd.DataFrame(risk["contributions"])
-        st.altair_chart(alt.Chart(df.head(15)).mark_bar(color="#38bdf8").encode(
+        st.altair_chart(alt.Chart(df.head(15)).mark_bar(color=theme.ACCENT).encode(
             y=alt.Y("label:N", sort="-x", title=None), x=alt.X("applied_points:Q", title="points applied"),
             tooltip=["label", "category", "base_points", "multiplier", "applied_points", "note"]).properties(height=max(120, 26 * min(15, len(df)))), width="stretch")
         st.dataframe(df[["label", "category", "base_points", "multiplier", "applied_points", "note"]], hide_index=True, width="stretch")

@@ -90,9 +90,12 @@ def benign_bank(rename: bool = False, extra: bool = False) -> bytes:
 TARGET_PKGS = [f"com.fakebank{i}.mobile" for i in range(1, 13)]
 
 
-def banking_trojan() -> bytes:
-    """Capability pattern of an accessibility/overlay/SMS banking trojan, expressed as inert method references."""
-    pkg = "com.fake.update.service"
+def banking_trojan(c2_demo: bool = False, pkg: str = "com.fake.update.service", bot_id: str = "0000000000") -> bytes:
+    """Capability pattern of an accessibility/overlay/SMS banking trojan, expressed as inert method references.
+
+    c2_demo adds two inert network strings for demonstrations of the infrastructure view: a hard-coded public IP (the Nmap project's
+    scanme.nmap.org host, so any passive lookup returns real, non-malicious data) and a Telegram Bot API URL with an obviously fake token.
+    """
     a = "android.permission."
     m = manifest(pkg, perms("INTERNET", "RECEIVE_SMS", "READ_SMS", "SEND_SMS", "SYSTEM_ALERT_WINDOW", "REQUEST_INSTALL_PACKAGES",
                             "RECEIVE_BOOT_COMPLETED", "PACKAGE_USAGE_STATS"),
@@ -103,7 +106,7 @@ def banking_trojan() -> bytes:
                      comp("receiver", ".AdminRx", exported=True, permission=a + "BIND_DEVICE_ADMIN",
                           actions=["android.app.action.DEVICE_ADMIN_ENABLED"]),
                      comp("receiver", ".BootRx", exported=True, actions=["android.intent.action.BOOT_COMPLETED"])])
-    p = "Lcom/fake/update/service/"
+    p = "L" + pkg.replace(".", "/") + "/"
     classes = [
         ClassSpec(p + "AccService;", "Landroid/accessibilityservice/AccessibilityService;", [
             method("onAccessibilityEvent", [
@@ -129,7 +132,8 @@ def banking_trojan() -> bytes:
             v("Landroid/content/pm/PackageManager;", "setComponentEnabledSetting", "V",
               ["Landroid/content/ComponentName;", "I", "I"]),
             v("Landroid/content/ClipboardManager;", "getPrimaryClip", "Landroid/content/ClipData;")],
-            strings=["http://cdn-update-check.top/stage2.bin"])]),
+            strings=["http://cdn-update-check.top/stage2.bin"]
+            + (["http://45.33.32.156:8080/gate.php", f"https://api.telegram.org/bot{bot_id}:DEMO-TOKEN-NOT-A-REAL-TOKEN/sendMessage"] if c2_demo else []))]),
     ]
     return build_apk(m, classes)
 
