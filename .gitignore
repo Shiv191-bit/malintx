@@ -65,3 +65,4 @@ documents/
 
 # Legacy scaffold code
 legacy/
+.env.example
