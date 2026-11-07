@@ -56,3 +56,12 @@ lab_results_triage/
 dataset/
 var_demo/
 .venv_mac/
+
+# IDE & tool configs
+.claude/
+
+# Internal project documents (PDFs, PPTs, build plans)
+documents/
+
+# Legacy scaffold code
+legacy/
