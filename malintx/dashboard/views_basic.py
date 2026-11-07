@@ -17,7 +17,8 @@ STAGE_ICON = {"pending": "○", "running": "◔", "done": "●", "skipped": "◌
 
 def open_job(job_id: str) -> None:
     st.session_state["job_id"] = job_id
-    st.session_state["page"] = "Analysis"
+    # Use _nav_to so we do not modify the radio widget key after it has been instantiated
+    st.session_state["_nav_to"] = "Analysis"
 
 
 def overview(client: ApiClient) -> None:

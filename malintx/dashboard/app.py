@@ -15,6 +15,9 @@ def main() -> None:
     theme.inject()
     client = ApiClient()
     st.session_state.setdefault("page", "Overview")
+    # Flush pending navigation set by open_job() before the radio widget renders
+    if st.session_state.get("_nav_to"):
+        st.session_state["page"] = st.session_state.pop("_nav_to")
     linked = st.query_params.get("job")
     if linked and not st.session_state.get("_deeplink_applied"):  # shareable link: ?job=<analysis id>
         st.session_state.update(job_id=linked, page="Analysis", _deeplink_applied=True)
